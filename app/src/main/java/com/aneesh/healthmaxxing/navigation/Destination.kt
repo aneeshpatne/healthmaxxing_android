@@ -1,7 +1,7 @@
 package com.aneesh.healthmaxxing.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -13,11 +13,11 @@ enum class Destination(
     val label: String,
     val contentDescription: String
 ) {
-    HOME(
-        route = "home",
-        icon = Icons.Default.Home,
-        label = "Home",
-        contentDescription = "Home Screen"
+    METRICS(
+        route = "metrics",
+        icon = Icons.Default.Analytics,
+        label = "Metrics",
+        contentDescription = "Metrics Screen"
     ),
     WORKOUTS(
         route = "workouts",

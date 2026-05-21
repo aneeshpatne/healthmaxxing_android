@@ -25,11 +25,12 @@ import com.aneesh.healthmaxxing.navigation.Destination
 fun AppScaffold() {
     val navController = rememberNavController()
     var selectedDestination by rememberSaveable {
-        mutableIntStateOf(Destination.HOME.ordinal)
+        mutableIntStateOf(Destination.METRICS.ordinal)
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        topBar = {TopBar()},
         bottomBar = {
             NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
                 Destination.entries.forEachIndexed { index, destination ->
@@ -60,11 +61,11 @@ fun AppScaffold() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Destination.HOME.route,
+            startDestination = Destination.METRICS.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Destination.HOME.route) {
-                DestinationText(text = "Home")
+            composable(Destination.METRICS.route) {
+                DestinationText(text = "Metrics")
             }
             composable(Destination.WORKOUTS.route) {
                 DestinationText(text = "Workouts")
