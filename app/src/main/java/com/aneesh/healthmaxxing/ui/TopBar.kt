@@ -2,8 +2,6 @@ package com.aneesh.healthmaxxing.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
@@ -37,7 +37,7 @@ fun TopBar() {
     val colorScheme = MaterialTheme.colorScheme
     val isDarkTheme = isSystemInDarkTheme()
     val topBarColor = if (isDarkTheme) {
-        Color(0xFF151A17)
+        Color(0xFF101114)
     } else {
         colorScheme.surface
     }
@@ -132,7 +132,7 @@ fun TopBar() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(colorScheme.outlineVariant.copy(alpha = if (isDarkTheme) 0.22f else 0.55f))
+                    .background(colorScheme.outlineVariant.copy(alpha = if (isDarkTheme) 0.22f else 0.24f))
             )
         }
     }
