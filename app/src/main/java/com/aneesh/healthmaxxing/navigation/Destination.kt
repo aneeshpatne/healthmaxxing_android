@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 
 enum class Destination(
-    val route:String,
+    val route: String,
     val icon: ImageVector,
     val label: String,
     val contentDescription: String
@@ -26,6 +26,12 @@ enum class Destination(
         contentDescription = "Workouts Screen"
     ),
     RECORD(
+        route = "record",
+        icon = Icons.Default.History,
+        label = "Record",
+        contentDescription = "Record Screen"
+    ),
+    VITALS(
         route = "record",
         icon = Icons.Default.History,
         label = "Record",
