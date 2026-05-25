@@ -32,9 +32,9 @@ enum class Destination(
         contentDescription = "Record Screen"
     ),
     VITALS(
-        route = "record",
+        route = "vitals",
         icon = Icons.Default.History,
-        label = "Record",
-        contentDescription = "Record Screen"
+        label = "Vitals",
+        contentDescription = "Vitals Screen"
     )
 }
