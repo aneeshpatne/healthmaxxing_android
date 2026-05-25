@@ -98,6 +98,9 @@ fun AppScaffold() {
             composable(Destination.RECORD.route) {
                 DestinationText(text = "Record")
             }
+            composable(Destination.VITALS.route) {
+                DestinationText(text = "Vitals")
+            }
         }
     }
 }
