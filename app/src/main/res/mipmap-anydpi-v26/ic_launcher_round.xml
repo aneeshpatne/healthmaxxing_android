@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/wave_logo_background"/>
-    <foreground android:drawable="@mipmap/wave_logo_foreground"/>
-    <monochrome android:drawable="@mipmap/wave_logo_foreground"/>
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@drawable/frame_55"/>
+    <monochrome android:drawable="@drawable/frame_55"/>
 </adaptive-icon>
