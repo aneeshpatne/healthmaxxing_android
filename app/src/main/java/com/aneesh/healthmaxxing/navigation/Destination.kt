@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.ui.graphics.vector.ImageVector
 
 
@@ -33,8 +34,9 @@ enum class Destination(
     ),
     VITALS(
         route = "vitals",
-        icon = Icons.Default.History,
+        icon = Icons.Default.MonitorHeart,
         label = "Vitals",
         contentDescription = "Vitals Screen"
     )
 }
+
