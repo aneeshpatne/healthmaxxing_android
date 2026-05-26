@@ -1,14 +1,27 @@
 package com.aneesh.healthmaxxing.account
 
+import com.aneesh.healthmaxxing.data.datastore.AccountPreferences
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-class AccountViewModel : ViewModel() {
-    private val _selectedAccoundId = MutableStateFlow<String?>(null)
-    val selectedAccountId: StateFlow<String?> = _selectedAccoundId.asStateFlow()
+class AccountViewModel(
+    private val prefs: AccountPreferences
+) : ViewModel() {
+
+    val selectedAccountId: StateFlow<String?> =
+        prefs.selectedAccountId.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
+
     fun selectAccount(id: String) {
-        _selectedAccoundId.value = id
+        viewModelScope.launch {
+            prefs.saveSelectedAccountId(id)
+        }
     }
 }
