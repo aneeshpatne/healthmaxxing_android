@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.R
 
 @Composable
-fun LoginPage1(onNext: () -> Unit) {
+fun LoginPage1(onNext: (hasAccount: Boolean) -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     val formaTeal = Color(0xFF008284)
     Column(
@@ -100,7 +100,7 @@ fun LoginPage1(onNext: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = onNext,
+                onClick = { onNext(false) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -125,7 +125,7 @@ fun LoginPage1(onNext: () -> Unit) {
                 )
             }
             TextButton(
-                onClick = {},
+                onClick = { onNext(true) },
                 colors = ButtonDefaults.textButtonColors(contentColor = formaTeal)
             ) {
                 Text(

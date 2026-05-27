@@ -20,9 +20,11 @@ fun login() {
     ) {
         composable(OnBoardingScreen.Page1.route) {
             LoginPage1(
-                onNext = {
-                    navController.navigate(OnBoardingScreen.Page2.route) {
-                        launchSingleTop = true
+                onNext = { hasAccount ->
+                    if (!hasAccount) {
+                        navController.navigate(OnBoardingScreen.Page2.route) {
+                            launchSingleTop = true
+                        }
                     }
                 }
             )
