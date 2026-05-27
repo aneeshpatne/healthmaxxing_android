@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,7 +43,8 @@ fun LoginPage2() {
             )
             Text(
                 text = "Add your name and email to create your account",
-                modifier = Modifier.widthIn(max = 280.dp),
+                modifier = Modifier.widthIn(max = 200.dp),
+                color = MaterialTheme.colorScheme.secondary,
                 textAlign = TextAlign.Center
             )
         }
