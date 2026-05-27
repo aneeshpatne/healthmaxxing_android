@@ -1,14 +1,17 @@
 package com.aneesh.healthmaxxing.account
 
 import com.aneesh.healthmaxxing.data.datastore.AccountPreferences
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AccountViewModel(
+@HiltViewModel
+class AccountViewModel @Inject constructor(
     private val prefs: AccountPreferences
 ) : ViewModel() {
 
