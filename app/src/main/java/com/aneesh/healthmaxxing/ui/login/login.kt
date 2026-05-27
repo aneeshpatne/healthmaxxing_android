@@ -3,7 +3,9 @@ package com.aneesh.healthmaxxing.ui.login
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,7 +23,11 @@ fun login() {
         composable(OnBoardingScreen.Page1.route) {
             LoginPage1(
                 onNext = { hasAccount ->
-                    if (!hasAccount) {
+                    if (hasAccount) {
+                        navController.navigate(OnBoardingScreen.Page3.route) {
+                            launchSingleTop = true
+                        }
+                    } else {
                         navController.navigate(OnBoardingScreen.Page2.route) {
                             launchSingleTop = true
                         }
@@ -36,6 +42,16 @@ fun login() {
                     .safeDrawingPadding()
             )
             LoginPage2()
+        }
+        composable(OnBoardingScreen.Page3.route) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "LoginPage3 Placeholder")
+            }
         }
     }
 }
