@@ -3,7 +3,6 @@ package com.aneesh.healthmaxxing.ui.login
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +49,7 @@ fun login() {
                     .safeDrawingPadding(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "LoginPage3 Placeholder")
+                LoginPage3()
             }
         }
     }
