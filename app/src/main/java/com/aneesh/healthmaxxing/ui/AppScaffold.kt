@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aneesh.healthmaxxing.account.AccountViewModel
 import com.aneesh.healthmaxxing.navigation.Destination
+import com.aneesh.healthmaxxing.ui.login.login
 
 @Composable
 fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
@@ -28,7 +29,7 @@ fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
     }
     val selectedAccountId by vm.selectedAccountId.collectAsState()
     if (selectedAccountId == null) {
-        Text("Login")
+        login()
     } else {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
