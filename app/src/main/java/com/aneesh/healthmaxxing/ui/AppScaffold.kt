@@ -12,13 +12,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.aneesh.healthmaxxing.account.AccountViewModel
 import com.aneesh.healthmaxxing.navigation.Destination
 
 @Composable
-fun AppScaffold() {
+fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
     val navController = rememberNavController()
     var selectedDestination by rememberSaveable {
         mutableIntStateOf(Destination.METRICS.ordinal)
@@ -73,4 +75,3 @@ private fun DestinationText(text: String) {
         Text(text = text)
     }
 }
-
