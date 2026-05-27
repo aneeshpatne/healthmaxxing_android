@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
 val Context.dataStore by preferencesDataStore(name = "account_prefs")
 
-class AccountPreferences(private val context: Context) {
+class AccountPreferences @Inject constructor(
+    @param:ApplicationContext private val context: Context
+) {
     private val selectedAccountIdKey = stringPreferencesKey("selected_account_id")
     val selectedAccountId = context.dataStore.data.map { prefs ->
         prefs[selectedAccountIdKey]
