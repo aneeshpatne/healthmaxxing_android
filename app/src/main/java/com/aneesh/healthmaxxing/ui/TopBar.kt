@@ -1,7 +1,6 @@
 package com.aneesh.healthmaxxing.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,9 +29,7 @@ import com.aneesh.healthmaxxing.R
 
 @Composable
 fun TopBar() {
-    val colorScheme = MaterialTheme.colorScheme
-    val isDarkTheme = isSystemInDarkTheme()
-
+    val primaryAccent = MaterialTheme.colorScheme.primary
 
     Surface(
         modifier = Modifier
@@ -60,8 +57,8 @@ fun TopBar() {
                         fontFamily = FontFamily(Font(R.font.cormorant_garamond_variablefont_wght)),
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.sp,
-                        color = colorScheme.onSurface
-                    )
+
+                        )
 
                 }
 
@@ -74,12 +71,12 @@ fun TopBar() {
                     IconButton(
                         onClick = {},
                         colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colorScheme.primary.copy(alpha = 0.12f),
-                            contentColor = colorScheme.primary
+                            containerColor = primaryAccent.copy(alpha = 0.12f),
+                            contentColor = primaryAccent
                         ),
                         modifier = Modifier
                             .size(42.dp)
-                            .background(colorScheme.primary.copy(alpha = 0.04f), CircleShape)
+                            .background(primaryAccent.copy(alpha = 0.04f), CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
