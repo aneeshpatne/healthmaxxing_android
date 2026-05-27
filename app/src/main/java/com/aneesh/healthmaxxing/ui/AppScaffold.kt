@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,42 +26,46 @@ fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
     var selectedDestination by rememberSaveable {
         mutableIntStateOf(Destination.METRICS.ordinal)
     }
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = { TopBar() },
-        bottomBar = {
-            FormaBottomBar(
-                selectedDestination = selectedDestination,
-                onDestinationSelected = { index, destination ->
-                    selectedDestination = index
-                    navController.navigate(destination.route) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+    val selectedAccountId by vm.selectedAccountId.collectAsState()
+    if (selectedAccountId == null) {
+        Text("Login")
+    } else {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = { TopBar() },
+            bottomBar = {
+                FormaBottomBar(
+                    selectedDestination = selectedDestination,
+                    onDestinationSelected = { index, destination ->
+                        selectedDestination = index
+                        navController.navigate(destination.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
                         }
                     }
+                )
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Destination.METRICS.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Destination.METRICS.route) {
+                    DestinationText(text = "Metrics")
                 }
-            )
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Destination.METRICS.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Destination.METRICS.route) {
-                DestinationText(text = "Metrics")
-            }
-            composable(Destination.WORKOUTS.route) {
-                DestinationText(text = "Workouts")
-            }
-            composable(Destination.RECORD.route) {
-                DestinationText(text = "Record")
-            }
-            composable(Destination.VITALS.route) {
-                DestinationText(text = "Vitals")
+                composable(Destination.WORKOUTS.route) {
+                    DestinationText(text = "Workouts")
+                }
+                composable(Destination.RECORD.route) {
+                    DestinationText(text = "Record")
+                }
+                composable(Destination.VITALS.route) {
+                    DestinationText(text = "Vitals")
+                }
             }
         }
     }
