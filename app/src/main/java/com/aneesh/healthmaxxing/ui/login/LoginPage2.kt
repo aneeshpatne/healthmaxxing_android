@@ -25,7 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -97,11 +97,13 @@ fun LoginPage2() {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+
                 FormaTextInput(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Name",
-                    icon = Icons.Default.Person
+                    value = email,
+                    onValueChange = { email = it },
+                    label = "Email",
+                    icon = Icons.Default.Email,
+                    keyboardType = KeyboardType.Email
                 )
             }
         }
