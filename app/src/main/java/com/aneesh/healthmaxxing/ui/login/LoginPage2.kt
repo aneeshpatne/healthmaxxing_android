@@ -50,12 +50,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aneesh.healthmaxxing.R
 
 @Composable
-fun LoginPage2() {
+fun LoginPage2(
+    loginViewModel: LoginViewModel = hiltViewModel()
+) {
     val formaTeal = Color(0xFF008284)
-    var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
 
     Column(
@@ -105,11 +107,19 @@ fun LoginPage2() {
                     icon = Icons.Default.Email,
                     keyboardType = KeyboardType.Email
                 )
+                loginViewModel.error?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
-            onClick = {},
+            onClick = { loginViewModel.register(email) },
+            enabled = !loginViewModel.loading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -120,7 +130,7 @@ fun LoginPage2() {
             )
         ) {
             Text(
-                text = "Continue",
+                text = if (loginViewModel.loading) "Please wait" else "Continue",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.sp
