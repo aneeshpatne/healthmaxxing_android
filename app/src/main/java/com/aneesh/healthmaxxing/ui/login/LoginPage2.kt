@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -88,7 +87,7 @@ fun LoginPage2() {
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Add your name and email to create your account",
+                    text = "Enter email to create your account",
                     modifier = Modifier.widthIn(max = 200.dp),
                     color = MaterialTheme.colorScheme.secondary,
                     textAlign = TextAlign.Center
@@ -103,13 +102,6 @@ fun LoginPage2() {
                     onValueChange = { name = it },
                     label = "Name",
                     icon = Icons.Default.Person
-                )
-                FormaTextInput(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = "Email",
-                    icon = Icons.Default.Email,
-                    keyboardType = KeyboardType.Email
                 )
             }
         }
