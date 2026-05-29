@@ -43,3 +43,15 @@ data class ProfileMetadataResponse(
     @SerializedName("gender") val gender: String,
     @SerializedName("profileImage") val profileImage: String?
 )
+
+data class AddMeasurementRequest(
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("weight") val weight: Double,
+    @SerializedName("heartbeat") val heartbeat: Int?,
+    @SerializedName("impedance") val impedance: Double?
+)
+
+data class AddMeasurementResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("id") val id: String
+)
