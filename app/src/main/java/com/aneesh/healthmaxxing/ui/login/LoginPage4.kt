@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,10 +35,12 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,12 +49,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aneesh.healthmaxxing.R
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,12 +65,22 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginPage4() {
+fun LoginPage4(
+    onRegistered: () -> Unit = {},
+    loginViewModel: LoginViewModel = hiltViewModel()
+) {
     val formaTeal = Color(0xFF008284)
     var name by rememberSaveable { mutableStateOf("") }
     var heightCm by rememberSaveable { mutableStateOf(170) }
     var dateOfBirth by rememberSaveable { mutableStateOf("") }
     var gender by rememberSaveable { mutableStateOf("") }
+    var bodyType by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(loginViewModel.success) {
+        if (loginViewModel.success) {
+            onRegistered()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -108,10 +124,23 @@ fun LoginPage4() {
                 value = gender,
                 onValueChange = { gender = it }
             )
+            BodyTypeDropdown(
+                value = bodyType,
+                onValueChange = { bodyType = it }
+            )
+            loginViewModel.error?.let { message ->
+                Text(
+                    text = message,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp
+                )
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(32.dp))
         Button(
-            onClick = { },
+            onClick = { loginViewModel.registerProfile(name, heightCm.toString(), dateOfBirth, gender.lowercase(), bodyType) },
+            enabled = !loginViewModel.loading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -122,7 +151,7 @@ fun LoginPage4() {
             )
         ) {
             Text(
-                text = "Start your fitness journey",
+                text = if (loginViewModel.loading) "Please wait" else "Start your fitness journey",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.sp
@@ -143,9 +172,40 @@ private fun GenderDropdown(
     value: String,
     onValueChange: (String) -> Unit
 ) {
+    StyledDropdown(
+        label = "Gender",
+        value = value,
+        options = listOf("Male", "Female"),
+        onValueChange = onValueChange
+    )
+}
+
+@Composable
+private fun BodyTypeDropdown(
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    StyledDropdown(
+        label = "Body type",
+        value = value,
+        options = listOf("standard", "athlete"),
+        onValueChange = onValueChange
+    )
+}
+
+@Composable
+private fun StyledDropdown(
+    label: String,
+    value: String,
+    options: List<String>,
+    onValueChange: (String) -> Unit
+) {
     val formaTeal = Color(0xFF1BA7A7)
     val shape = RoundedCornerShape(20.dp)
+    val menuShape = RoundedCornerShape(16.dp)
+    val density = LocalDensity.current
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var menuWidth by remember { mutableStateOf(0.dp) }
     val borderColor = if (expanded) formaTeal else Color(0xFFE5E7EB)
 
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -153,6 +213,9 @@ private fun GenderDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)
+                .onGloballyPositioned { coordinates ->
+                    menuWidth = with(density) { coordinates.size.width.toDp() }
+                }
                 .background(Color.White, shape)
                 .border(1.dp, borderColor, shape)
                 .clickable { expanded = true }
@@ -171,7 +234,7 @@ private fun GenderDropdown(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Gender",
+                    text = label,
                     color = Color.Gray,
                     fontSize = 13.sp,
                     lineHeight = 16.sp
@@ -194,25 +257,26 @@ private fun GenderDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
+                .width(menuWidth)
+                .background(Color.White, menuShape)
         ) {
-            DropdownMenuItem(
-                text = { Text("Male") },
-                onClick = {
-                    onValueChange("Male")
-                    expanded = false
-                },
-                colors = MenuDefaults.itemColors(textColor = Color(0xFF111827))
-            )
-            DropdownMenuItem(
-                text = { Text("Female") },
-                onClick = {
-                    onValueChange("Female")
-                    expanded = false
-                },
-                colors = MenuDefaults.itemColors(textColor = Color(0xFF111827))
-            )
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = option,
+                            color = Color(0xFF111827),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    },
+                    colors = MenuDefaults.itemColors(textColor = Color(0xFF111827))
+                )
+            }
         }
     }
 }

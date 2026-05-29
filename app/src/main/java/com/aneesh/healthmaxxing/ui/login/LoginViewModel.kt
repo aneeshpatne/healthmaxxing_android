@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aneesh.healthmaxxing.data.datastore.AccountPreferences
 import com.aneesh.healthmaxxing.data.remote.ApiService
+import com.aneesh.healthmaxxing.data.remote.ProfileMetadataRequest
 import com.aneesh.healthmaxxing.data.remote.RegisterProfileRequest
 import com.aneesh.healthmaxxing.data.remote.RegisterRequest
 import com.aneesh.healthmaxxing.data.remote.RegisterResponse
@@ -36,10 +37,41 @@ class LoginViewModel @Inject constructor(
     var registeredUser by mutableStateOf<RegisterResponse?>(null)
         private set
 
-    fun registerProfile(name: String) {
+    fun registerProfile(
+        name: String,
+        height: String,
+        dateOfBirth: String,
+        gender: String,
+        bodyType: String
+    ) {
         val trimmedName = name.trim()
         if (trimmedName.isBlank()) {
             error = "Name is required"
+            success = false
+            return
+        }
+
+        val heightCm = height.toIntOrNull()
+        if (heightCm == null) {
+            error = "Height is required"
+            success = false
+            return
+        }
+
+        if (dateOfBirth.isBlank()) {
+            error = "Date of birth is required"
+            success = false
+            return
+        }
+
+        if (gender.isBlank()) {
+            error = "Gender is required"
+            success = false
+            return
+        }
+
+        if (bodyType.isBlank()) {
+            error = "Body type is required"
             success = false
             return
         }
@@ -68,8 +100,25 @@ class LoginViewModel @Inject constructor(
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body?.ok == true) {
-                        success = true
                         pendingProfileId = body.id
+                        val metadataResponse = apiService.registerProfileMetadata(
+                            ProfileMetadataRequest(
+                                profileId = body.id,
+                                heightCm = heightCm,
+                                dateOfBirth = dateOfBirth,
+                                peopleType = bodyType,
+                                gender = gender
+                            )
+                        )
+
+                        if (metadataResponse.isSuccessful && metadataResponse.body()?.ok == true) {
+                            accountPreferences.saveSelectedAccountId(accountId)
+                            accountPreferences.saveSelectedPrimaryProfileId(body.id)
+                            success = true
+                        } else {
+                            error = metadataResponse.errorBody()?.string()
+                                ?: "Profile metadata registration failed with code ${metadataResponse.code()}"
+                        }
                     } else {
                         error = "Profile registration failed"
                     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -14,6 +15,7 @@ import com.aneesh.healthmaxxing.navigation.OnBoardingScreen
 @Composable
 fun login() {
     val navController = rememberNavController()
+    val loginViewModel: LoginViewModel = hiltViewModel()
 
     NavHost(
         navController = navController,
@@ -45,7 +47,8 @@ fun login() {
                     navController.navigate(OnBoardingScreen.Page4.route) {
                         launchSingleTop = true
                     }
-                }
+                },
+                loginViewModel = loginViewModel
             )
         }
         composable(OnBoardingScreen.Page3.route) {
@@ -65,7 +68,7 @@ fun login() {
                     .safeDrawingPadding(),
                 contentAlignment = Alignment.Center
             ) {
-                LoginPage4()
+                LoginPage4(loginViewModel = loginViewModel)
             }
         }
     }
