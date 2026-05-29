@@ -10,8 +10,8 @@ import com.aneesh.healthmaxxing.data.remote.ApiService
 import com.aneesh.healthmaxxing.data.remote.RegisterRequest
 import com.aneesh.healthmaxxing.data.remote.RegisterResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.io.IOException
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,6 +20,9 @@ class LoginViewModel @Inject constructor(
     private val accountPreferences: AccountPreferences
 ) : ViewModel() {
     var loading by mutableStateOf(false)
+        private set
+
+    var pendingAccountId by mutableStateOf<String?>(null)
         private set
     var error by mutableStateOf<String?>(null)
         private set
@@ -54,7 +57,7 @@ class LoginViewModel @Inject constructor(
                     if (body?.ok == true) {
                         success = true
                         registeredUser = body
-                        accountPreferences.saveSelectedAccountId(body.id)
+                        pendingAccountId = body.id
                     } else {
                         error = "Registration failed"
                     }
