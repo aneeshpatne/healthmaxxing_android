@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.aneesh.healthmaxxing.account.AccountViewModel
 import com.aneesh.healthmaxxing.navigation.Destination
 import com.aneesh.healthmaxxing.ui.login.login
+import com.aneesh.healthmaxxing.ui.record.RecordScreen
 
 @Composable
 fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
@@ -62,7 +63,7 @@ fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
                     DestinationText(text = "Workouts")
                 }
                 composable(Destination.RECORD.route) {
-                    DestinationText(text = "Record")
+                    RecordScreen()
                 }
                 composable(Destination.VITALS.route) {
                     DestinationText(text = "Vitals")
