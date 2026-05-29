@@ -10,4 +10,7 @@ interface ApiService {
 
     @POST("client/register/profiles")
     suspend fun registerProfile(@Body request: RegisterProfileRequest): Response<RegisterProfileResponse>
+
+    @POST("client/register/profiles/metadata")
+    suspend fun registerProfileMetadata(@Body request: ProfileMetadataRequest): Response<ProfileMetadataResponse>
 }

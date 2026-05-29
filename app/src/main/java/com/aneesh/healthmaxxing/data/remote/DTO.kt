@@ -25,3 +25,21 @@ data class RegisterProfileResponse(
     @SerializedName("name") val name: String,
     @SerializedName("isPrimary") val isPrimary: String
 )
+
+data class ProfileMetadataRequest(
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("heightCm") val heightCm: Int,
+    @SerializedName("dateOfBirth") val dateOfBirth: String,
+    @SerializedName("peopleType") val peopleType: String,
+    @SerializedName("gender") val gender: String
+)
+
+data class ProfileMetadataResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("heightCm") val heightCm: Int,
+    @SerializedName("dateOfBirth") val dateOfBirth: String,
+    @SerializedName("peopleType") val peopleType: String,
+    @SerializedName("gender") val gender: String,
+    @SerializedName("profileImage") val profileImage: String?
+)
