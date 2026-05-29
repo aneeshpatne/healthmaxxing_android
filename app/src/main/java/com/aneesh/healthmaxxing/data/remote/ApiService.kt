@@ -13,4 +13,7 @@ interface ApiService {
 
     @POST("client/register/metadata")
     suspend fun registerProfileMetadata(@Body request: ProfileMetadataRequest): Response<ProfileMetadataResponse>
+
+    @POST("ingest/add_measurement")
+    suspend fun addMeasurement(@Body request: AddMeasurementRequest): Response<AddMeasurementResponse>
 }
