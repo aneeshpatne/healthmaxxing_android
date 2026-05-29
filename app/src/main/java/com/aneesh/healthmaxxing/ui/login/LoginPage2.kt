@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,10 +56,17 @@ import com.aneesh.healthmaxxing.R
 
 @Composable
 fun LoginPage2(
+    onRegistered: () -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
     val formaTeal = Color(0xFF008284)
     var email by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(loginViewModel.success) {
+        if (loginViewModel.success) {
+            onRegistered()
+        }
+    }
 
     Column(
         modifier = Modifier
