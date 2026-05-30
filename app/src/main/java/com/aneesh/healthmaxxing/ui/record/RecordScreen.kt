@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
-private val ScreenBackground = Color(0xFFF3F8FA)
 private val Ink = Color(0xFF173238)
 private val MutedInk = Color(0xFF66767A)
 private val Teal = Color(0xFF006D73)
@@ -86,7 +85,6 @@ fun RecordScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ScreenBackground)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
