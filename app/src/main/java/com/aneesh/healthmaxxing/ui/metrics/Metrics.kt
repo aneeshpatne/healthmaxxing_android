@@ -1,11 +1,13 @@
 package com.aneesh.healthmaxxing.ui.metrics
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,12 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -37,7 +44,13 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -57,6 +70,8 @@ private val CardStroke = Color(0xFFE6EEF2)
 
 @Composable
 fun MetricsScreen() {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,6 +82,8 @@ fun MetricsScreen() {
         DashboardHeader()
         WeightTrendCard()
         MetricCardsRow()
+        MetricTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+        MetricTabContent(selectedTab = selectedTab)
         Spacer(modifier = Modifier.height(4.dp))
     }
 }
@@ -218,52 +235,217 @@ private fun YAxisLabels(modifier: Modifier = Modifier) {
 @Composable
 private fun MetricCardsRow() {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        MetricCard(
-            modifier = Modifier.weight(1f),
+        // Weight Card (Green Theme)
+        HealthMetricCard(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
             title = "Weight",
             value = "78",
-            valueColor = Teal,
-            descriptor = "Stable",
-            trend = "\u2191 5 pts"
+            unit = "kg",
+            statusText = "Stable",
+            trendUp = true,
+            trendValue = "5 pts",
+            themeColor = Color(0xFF00A859)
         )
-        MetricCard(
-            modifier = Modifier.weight(1f),
+
+        // Body Age Card (Blue Theme)
+        HealthMetricCard(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
             title = "Body Age",
             value = "28",
-            valueColor = Indigo,
-            descriptor = "Older",
-            trend = "\u2193 2 years"
+            unit = null,
+            statusText = "Older",
+            trendUp = false,
+            trendValue = "2 years",
+            themeColor = Color(0xFF2563EB)
         )
     }
 }
 
+
+
 @Composable
-private fun MetricCard(
+private fun TrendArrow(
+    isUp: Boolean,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val strokeWidth = 1.8f.dp.toPx()
+        val w = size.width
+        val h = size.height
+        
+        if (isUp) {
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, h),
+                end = Offset(w / 2f, 0f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, 0f),
+                end = Offset(w * 0.15f, h * 0.35f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, 0f),
+                end = Offset(w * 0.85f, h * 0.35f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+        } else {
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, 0f),
+                end = Offset(w / 2f, h),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, h),
+                end = Offset(w * 0.15f, h * 0.65f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = color,
+                start = Offset(w / 2f, h),
+                end = Offset(w * 0.85f, h * 0.65f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
+            )
+        }
+    }
+}
+
+@Composable
+private fun HealthMetricCard(
     modifier: Modifier,
     title: String,
     value: String,
-    valueColor: Color,
-    descriptor: String,
-    trend: String
+    unit: String? = null,
+    statusText: String,
+    trendUp: Boolean,
+    trendValue: String,
+    themeColor: Color
 ) {
-    Box(
-        modifier = modifier
-            .height(184.dp)
-            .border(1.dp, CardStroke, RoundedCornerShape(24.dp))
-    ) {
-        MetricComparisonColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 18.dp),
-            title = title,
-            value = value,
-            valueColor = valueColor,
-            descriptor = descriptor,
-            trend = trend
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+        modifier = modifier.shadow(
+            elevation = 6.dp,
+            shape = RoundedCornerShape(24.dp),
+            clip = false,
+            ambientColor = Color(0x0A000000),
+            spotColor = Color(0x12000000)
         )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 16.dp)
+        ) {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = Color(0xFF111827),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = value,
+                    fontSize = 52.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = themeColor,
+                    style = TextStyle(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
+                )
+                if (unit != null) {
+                    Text(
+                        text = unit,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color(0xFF6B7280),
+                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
+                        style = TextStyle(
+                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = statusText,
+                color = Ink,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                TrendArrow(
+                    isUp = trendUp,
+                    color = themeColor,
+                    modifier = Modifier.size(width = 8.dp, height = 12.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = themeColor)) {
+                            append(trendValue)
+                        }
+                        append(" ")
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Normal, color = Color(0xFF6B7280))) {
+                            append("vs last scan")
+                        }
+                    },
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
+                )
+            }
+        }
     }
 }
 
@@ -390,60 +572,5 @@ private fun SmoothAreaTrendChart(modifier: Modifier = Modifier) {
             center = points.last()
         )
         drawCircle(color = Color.White, radius = 3.dp.toPx(), center = points.last())
-    }
-}
-
-@Composable
-private fun MetricComparisonColumn(
-    modifier: Modifier,
-    title: String,
-    value: String,
-    valueColor: Color,
-    descriptor: String,
-    trend: String
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = MutedInk
-        )
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = value,
-                fontSize = 54.sp,
-                lineHeight = 56.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.sp,
-                color = valueColor
-            )
-            Text(
-                text = descriptor,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-                color = Ink
-            )
-        }
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(1.dp)
-        ) {
-            Text(
-                text = trend,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = PositiveAccent
-            )
-            Text(
-                text = "vs last scan",
-                style = MaterialTheme.typography.labelMedium,
-                color = SoftInk
-            )
-        }
     }
 }
