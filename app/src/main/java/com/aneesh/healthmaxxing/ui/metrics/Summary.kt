@@ -2,24 +2,31 @@ package com.aneesh.healthmaxxing.ui.metrics
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -28,21 +35,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aneesh.healthmaxxing.R
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -59,10 +71,13 @@ private val Orange = Color(0xFFF59E0B)
 private val Success = Color(0xFF16A34A)
 
 private val BodyFatTopPadding = 36.dp
-private val MuscleMassBottomPadding = 92.dp
+private val MuscleMassBottomPadding = 80.dp
 private val LeanMassTopPadding = 30.dp
 private val ProteinBottomPadding = 32.dp
 private val HydrationBottomPadding = 44.dp
+private val ChartLabelWidth = 100.dp
+private val ChartLabelHorizontalPadding = 8.dp
+private val MuscleMassElbowOffsetX = 20.dp
 
 private val segments = listOf(
     SummarySegment("Lean Mass", "27.5%", Blue, 27.5f, isLeft = false),
@@ -85,6 +100,147 @@ fun Summary(
     ) {
         SummaryHeader()
         BodyCompositionPanel()
+        BodyOverviewCard()
+        Stats()
+    }
+}
+
+@Composable
+private fun CustomizedCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.82f)
+        ),
+        border = BorderStroke(1.dp, BorderSoft),
+        content = content
+    )
+}
+
+@Composable
+private fun BodyOverviewCard(
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(250.dp)
+            .clip(RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF7F5EC)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .fillMaxHeight()
+                    .padding(start = 22.dp, top = 18.dp, bottom = 18.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "AI OVERVIEW",
+                    color = Color(0xFF4D7F3A),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "You’re making excellent progress.",
+                    color = Color(0xFF10120D),
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily.Serif,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Your body composition has improved significantly over the past 8 weeks.",
+                    color = Color(0xFF8B8C83),
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Normal,
+                    style = compactTextStyle()
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(0.5f)
+                    .fillMaxHeight()
+                    .clipToBounds(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                // Subtle dotted pattern background
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val dotColor = Color(0xFFD7D7C8).copy(alpha = 0.5f)
+                    val dotRadius = 1.dp.toPx()
+                    val spacing = 6.dp.toPx()
+
+                    val cols = (size.width / spacing).toInt() + 1
+                    val rows = (size.height / spacing).toInt() + 1
+                    for (i in 0 until cols) {
+                        for (j in 0 until rows) {
+                            drawCircle(
+                                color = dotColor,
+                                radius = dotRadius,
+                                center = Offset(i * spacing, j * spacing)
+                            )
+                        }
+                    }
+                }
+
+                Image(
+                    painter = painterResource(id = R.drawable.body),
+                    contentDescription = "Body composition illustration",
+                    modifier = Modifier
+                        .padding(end = 0.dp)
+                        .requiredSize(220.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Stats() {
+    Column() {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            maxItemsInEachRow = 2,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CustomizedCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(180.dp)
+            ) { Text("Card1") }
+            CustomizedCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(180.dp)
+            ) { Text("Card1") }
+            CustomizedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+            ) { Text("Card1") }
+        }
     }
 }
 
@@ -185,7 +341,7 @@ private fun ChartLabel(
     val isLeft = alignment == Alignment.TopStart || alignment == Alignment.BottomStart
     Column(
         modifier = modifier
-            .width(100.dp)
+            .width(ChartLabelWidth)
             .padding(horizontal = 4.dp),
         horizontalAlignment = if (isLeft) Alignment.Start else Alignment.End,
         verticalArrangement = Arrangement.spacedBy(1.dp)
@@ -245,8 +401,9 @@ private fun DonutChart(chartSize: Dp) {
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
             )
 
-            // Assume standard label height is 32dp for Y center calculation
+            // Match the fixed ChartLabel size and manual padding used below.
             val labelHeight = 32.dp.toPx()
+            val labelHorizontalPadding = ChartLabelHorizontalPadding.toPx()
 
             segments.forEach { segment ->
                 val sectionAngle = (segment.amount / total) * 360f
@@ -273,22 +430,26 @@ private fun DonutChart(chartSize: Dp) {
 
                 // Elbow point
                 val extendedRadius = outerRadius + 24.dp.toPx()
-                val elbowX = centerX + cos(midAngleRad) * extendedRadius
+                val elbowX = centerX + cos(midAngleRad) * extendedRadius + when (segment.label) {
+                    "Muscle Mass" -> MuscleMassElbowOffsetX.toPx()
+                    else -> 0f
+                }
 
                 // Determine target Y based on the label's manual layout position
                 val targetY = when (segment.label) {
                     "Body Fat" -> BodyFatTopPadding.toPx() + labelHeight / 2f
                     "Lean Mass" -> LeanMassTopPadding.toPx() + labelHeight / 2f
-                    "Protein" -> (height / 2f) - ProteinBottomPadding.toPx()
+                    "Protein" -> (height / 2f) - (ProteinBottomPadding.toPx() / 2f)
                     "Hydration" -> height - HydrationBottomPadding.toPx() - labelHeight / 2f
                     "Muscle Mass" -> height - MuscleMassBottomPadding.toPx() - labelHeight / 2f
                     else -> centerY
                 }
 
-                // Horizontal end point
-                val horizontalLength = 32.dp.toPx()
-                val endX =
-                    if (segment.isLeft) elbowX - horizontalLength else elbowX + horizontalLength
+                val endX = if (segment.isLeft) {
+                    labelHorizontalPadding
+                } else {
+                    width - labelHorizontalPadding
+                }
                 val endY = targetY
 
                 // Draw angled line segment
@@ -307,13 +468,6 @@ private fun DonutChart(chartSize: Dp) {
                     end = Offset(endX, endY),
                     strokeWidth = 1.5.dp.toPx(),
                     cap = StrokeCap.Round
-                )
-
-                // Draw end point dot
-                drawCircle(
-                    color = segment.color,
-                    radius = 3.5.dp.toPx(),
-                    center = Offset(endX, endY)
                 )
 
                 startAngle += sectionAngle
