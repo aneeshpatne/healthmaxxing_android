@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -81,7 +82,6 @@ fun Summary(
     ) {
         SummaryHeader()
         BodyCompositionPanel()
-        ProgressMessage()
     }
 }
 
@@ -148,7 +148,7 @@ private fun BodyCompositionPanel() {
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BoxWithConstraints(
@@ -158,6 +158,13 @@ private fun BodyCompositionPanel() {
                 val chartSize = maxWidth.coerceAtMost(292.dp)
                 DonutChart(chartSize = chartSize)
             }
+
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                color = BorderSoft
+            )
+
+            ProgressMessageContent()
         }
     }
 }
@@ -321,56 +328,50 @@ private fun DonutChart(chartSize: Dp) {
 
 
 @Composable
-private fun ProgressMessage() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = .78f),
-        border = BorderStroke(1.dp, BorderSoft),
-        shadowElevation = 0.dp
+private fun ProgressMessageContent() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFEFF6FF)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFEFF6FF)),
-                contentAlignment = Alignment.Center
-            ) {
-                TrendLineIcon(
-                    modifier = Modifier.size(24.dp),
-                    color = Blue
-                )
-            }
-            Spacer(modifier = Modifier.width(13.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
-                            append("You’re ")
-                        }
-                        withStyle(SpanStyle(color = Success, fontWeight = FontWeight.SemiBold)) {
-                            append("2.1%")
-                        }
-                        withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
-                            append(" better than your last scan")
-                        }
-                    },
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
-                    style = compactTextStyle()
-                )
-                Text(
-                    text = "Keep up the great work.",
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                    lineHeight = 16.sp,
-                    style = compactTextStyle()
-                )
-            }
+            TrendLineIcon(
+                modifier = Modifier.size(20.dp),
+                color = Blue
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
+                        append("You’re ")
+                    }
+                    withStyle(SpanStyle(color = Success, fontWeight = FontWeight.SemiBold)) {
+                        append("2.1%")
+                    }
+                    withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
+                        append(" better than your last scan")
+                    }
+                },
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                style = compactTextStyle()
+            )
+            Text(
+                text = "Keep up the great work.",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                style = compactTextStyle()
+            )
         }
     }
 }
