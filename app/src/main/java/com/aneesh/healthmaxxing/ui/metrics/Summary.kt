@@ -29,13 +29,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -153,25 +158,27 @@ private fun BodyCompositionPanel() {
                 val chartSize = maxWidth.coerceAtMost(292.dp)
                 DonutChart(chartSize = chartSize)
             }
-
-            CompositionGrid()
         }
     }
 }
 
 @Composable
 private fun DonutChart(chartSize: Dp) {
+    val textMeasurer = rememberTextMeasurer()
     Box(
         modifier = Modifier.size(chartSize),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(chartSize)) {
-            val strokeWidth = this.size.minDimension * .16f
-            val padding = strokeWidth / 2f
-            val arcSize = Size(this.size.width - padding * 2f, this.size.height - padding * 2f)
-            val topLeft = Offset(padding, padding)
+            val donutRadius = this.size.minDimension * 0.20f
+            val strokeWidth = donutRadius * 0.28f
+            val arcSize = Size(donutRadius * 2, donutRadius * 2)
+            val topLeft = Offset(center.x - donutRadius, center.y - donutRadius)
             val total = segments.sumOf { it.amount.toDouble() }.toFloat()
             var startAngle = -90f
+
+            val R_outer = donutRadius + strokeWidth / 2f
+            val R_start = R_outer + 4.dp.toPx()
 
             drawArc(
                 color = Color(0xFFEFF2F6),
@@ -199,18 +206,81 @@ private fun DonutChart(chartSize: Dp) {
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
                 )
 
-                val markerAngle = startAngle + sweep / 2f
-                val radius = (this.size.minDimension - strokeWidth) / 2f
-                val markerCenter = pointOnCircle(center, radius, markerAngle)
-                drawCircle(
-                    color = Color.White,
-                    radius = strokeWidth * .18f,
-                    center = markerCenter
+                val midAngle = startAngle + sweep / 2f
+                val angleRad = midAngle * (PI.toFloat() / 180f)
+                val cosA = cos(angleRad)
+                val sinA = sin(angleRad)
+
+                val isRight = cosA >= 0
+
+                val startPoint = Offset(
+                    center.x + cosA * R_start,
+                    center.y + sinA * R_start
                 )
+
+                val textAnchorX = if (isRight) {
+                    center.x + donutRadius + 18.dp.toPx()
+                } else {
+                    center.x - donutRadius - 18.dp.toPx()
+                }
+                
+                // End Y matches startPoint.y to keep the line perfectly horizontal
+                val textAnchor = Offset(textAnchorX, startPoint.y)
+
+                // Draw straight, perfectly horizontal pointer line
+                drawLine(
+                    color = segment.color.copy(alpha = 0.5f),
+                    start = startPoint,
+                    end = textAnchor,
+                    strokeWidth = 1.2.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                // Draw indicator dot
                 drawCircle(
                     color = segment.color,
-                    radius = strokeWidth * .11f,
-                    center = markerCenter
+                    radius = 3.dp.toPx(),
+                    center = startPoint
+                )
+
+                // Render labels text next to the connector lines
+                val labelText = buildAnnotatedString {
+                    withStyle(SpanStyle(color = segment.color, fontWeight = FontWeight.Bold, fontSize = 12.sp)) {
+                        append(segment.value)
+                    }
+                    append("\n")
+                    withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.SemiBold, fontSize = 10.sp)) {
+                        append(segment.label)
+                    }
+                }
+
+                val textLayoutResult = textMeasurer.measure(
+                    text = labelText,
+                    style = TextStyle(
+                        lineHeight = 13.sp,
+                        textAlign = if (isRight) TextAlign.Start else TextAlign.End,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
+                )
+
+                val textWidth = textLayoutResult.size.width
+                val textHeight = textLayoutResult.size.height
+                val textX = if (isRight) {
+                    textAnchorX + 5.dp.toPx()
+                } else {
+                    textAnchorX - 5.dp.toPx() - textWidth
+                }
+                val textY = startPoint.y - textHeight / 2f
+
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = labelText,
+                    topLeft = Offset(textX, textY),
+                    style = TextStyle(
+                        lineHeight = 13.sp,
+                        textAlign = if (isRight) TextAlign.Start else TextAlign.End,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
                 )
 
                 startAngle += sweep
@@ -219,101 +289,36 @@ private fun DonutChart(chartSize: Dp) {
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text = "Body Score",
                 color = TextSecondary,
-                fontSize = 13.sp,
-                lineHeight = 16.sp,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
                 style = compactTextStyle()
             )
             Text(
                 text = "86",
                 color = TextPrimary,
-                fontSize = 46.sp,
-                fontWeight = FontWeight.SemiBold,
-                lineHeight = 50.sp,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 36.sp,
                 style = compactTextStyle()
             )
             Text(
                 text = "Balanced",
                 color = Success,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 16.sp,
-                style = compactTextStyle()
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompositionGrid() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        segments.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                rowItems.forEach { segment ->
-                    CompositionMetric(
-                        segment = segment,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompositionMetric(
-    segment: SummarySegment,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceSoft)
-            .border(1.dp, BorderSoft, RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(segment.color)
-        )
-        Spacer(modifier = Modifier.width(9.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = segment.label,
-                color = TextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 14.sp,
-                maxLines = 1,
-                style = compactTextStyle()
-            )
-            Text(
-                text = segment.value,
-                color = TextPrimary,
-                fontSize = 18.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                lineHeight = 20.sp,
-                maxLines = 1,
+                lineHeight = 14.sp,
                 style = compactTextStyle()
             )
         }
     }
 }
+
+
 
 @Composable
 private fun ProgressMessage() {
