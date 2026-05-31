@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -36,9 +37,7 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -59,12 +58,18 @@ private val Green = Color(0xFF22C55E)
 private val Orange = Color(0xFFF59E0B)
 private val Success = Color(0xFF16A34A)
 
+private val BodyFatTopPadding = 36.dp
+private val MuscleMassBottomPadding = 92.dp
+private val LeanMassTopPadding = 30.dp
+private val ProteinBottomPadding = 32.dp
+private val HydrationBottomPadding = 44.dp
+
 private val segments = listOf(
-    SummarySegment("Lean Mass", "27.5%", Blue, 27.5f),
-    SummarySegment("Protein", "6.3%", Purple, 6.3f),
-    SummarySegment("Hydration", "53.2%", Cyan, 53.2f),
-    SummarySegment("Muscle Mass", "38.7%", Green, 38.7f),
-    SummarySegment("Body Fat", "24.3%", Orange, 24.3f)
+    SummarySegment("Lean Mass", "27.5%", Blue, 27.5f, isLeft = false),
+    SummarySegment("Protein", "6.3%", Purple, 6.3f, isLeft = false),
+    SummarySegment("Hydration", "53.2%", Cyan, 53.2f, isLeft = false),
+    SummarySegment("Muscle Mass", "38.7%", Green, 38.7f, isLeft = true),
+    SummarySegment("Body Fat", "24.3%", Orange, 24.3f, isLeft = true)
 )
 
 @Composable
@@ -158,7 +163,9 @@ private fun BodyCompositionPanel() {
             }
 
             HorizontalDivider(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 color = BorderSoft
             )
 
@@ -168,164 +175,249 @@ private fun BodyCompositionPanel() {
 }
 
 @Composable
+private fun ChartLabel(
+    label: String,
+    value: String,
+    color: Color,
+    alignment: Alignment,
+    modifier: Modifier = Modifier
+) {
+    val isLeft = alignment == Alignment.TopStart || alignment == Alignment.BottomStart
+    Column(
+        modifier = modifier
+            .width(100.dp)
+            .padding(horizontal = 4.dp),
+        horizontalAlignment = if (isLeft) Alignment.Start else Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(1.dp)
+    ) {
+        Text(
+            text = value,
+            color = color,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 18.sp,
+            style = compactTextStyle(),
+            textAlign = if (isLeft) TextAlign.Start else TextAlign.End
+        )
+        Text(
+            text = label,
+            color = TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 14.sp,
+            style = compactTextStyle(),
+            textAlign = if (isLeft) TextAlign.Start else TextAlign.End
+        )
+    }
+}
+
+@Composable
 private fun DonutChart(chartSize: Dp) {
-    val textMeasurer = rememberTextMeasurer()
     Box(
-        modifier = Modifier.size(chartSize),
+        modifier = Modifier
+            .size(width = chartSize, height = 300.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(chartSize)) {
-            val donutRadius = this.size.minDimension * 0.31f
-            val strokeWidth = donutRadius * 0.28f
-            val arcSize = Size(donutRadius * 2, donutRadius * 2)
-            val topLeft = Offset(center.x - donutRadius, center.y - donutRadius)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val centerX = width / 2f
+            val centerY = height / 2f
+
+            // donut radius is 25% of available width to leave room for labels/pointers
+            val donutRadius = minOf(width, height) * 0.25f
+            val strokeWidth = donutRadius * 0.32f
+            val outerRadius = donutRadius + strokeWidth / 2f
+            val innerRadius = donutRadius - strokeWidth / 2f
+
             val total = segments.sumOf { it.amount.toDouble() }.toFloat()
             var startAngle = -90f
+            val gapAngle = 4f
 
-            val labelInset = 10.dp.toPx()
-            val pointerWidth = 12.dp.toPx()
-            val pointerGap = 5.dp.toPx()
-            val geometries = mutableListOf<ChartLabelGeometry>()
-
+            // Draw background track
             drawArc(
                 color = Color(0xFFEFF2F6),
                 startAngle = 0f,
                 sweepAngle = 360f,
                 useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
+                topLeft = Offset(centerX - donutRadius, centerY - donutRadius),
+                size = Size(donutRadius * 2, donutRadius * 2),
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
             )
 
+            // Assume standard label height is 32dp for Y center calculation
+            val labelHeight = 32.dp.toPx()
+
             segments.forEach { segment ->
-                val sweep = (segment.amount / total) * 360f
+                val sectionAngle = (segment.amount / total) * 360f
+                val sweepAngle = sectionAngle - gapAngle
+
+                // Draw colored segment arc
                 drawArc(
-                    brush = Brush.linearGradient(
-                        colors = listOf(segment.color.copy(alpha = .72f), segment.color),
-                        start = topLeft,
-                        end = Offset(this.size.width, this.size.height)
-                    ),
+                    color = segment.color,
                     startAngle = startAngle,
-                    sweepAngle = sweep - 1.4f,
+                    sweepAngle = sweepAngle,
                     useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
+                    topLeft = Offset(centerX - donutRadius, centerY - donutRadius),
+                    size = Size(donutRadius * 2, donutRadius * 2),
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
                 )
 
-                val midAngle = startAngle + sweep / 2f
-                val angleRad = midAngle * (PI.toFloat() / 180f)
-                val cosA = cos(angleRad)
+                // Calculate midpoint angle of segment
+                val midAngle = startAngle + sweepAngle / 2f
+                val midAngleRad = midAngle * (PI.toFloat() / 180f)
 
-                val isRight = cosA >= 0
+                // Outer edge start point
+                val startX = centerX + cos(midAngleRad) * outerRadius
+                val startY = centerY + sin(midAngleRad) * outerRadius
 
-                val labelText = buildAnnotatedString {
-                    withStyle(SpanStyle(color = segment.color, fontWeight = FontWeight.Bold, fontSize = 12.sp)) {
-                        append(segment.value)
-                    }
-                    append("\n")
-                    withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.SemiBold, fontSize = 10.sp)) {
-                        append(segment.label)
-                    }
+                // Elbow point
+                val extendedRadius = outerRadius + 24.dp.toPx()
+                val elbowX = centerX + cos(midAngleRad) * extendedRadius
+
+                // Determine target Y based on the label's manual layout position
+                val targetY = when (segment.label) {
+                    "Body Fat" -> BodyFatTopPadding.toPx() + labelHeight / 2f
+                    "Lean Mass" -> LeanMassTopPadding.toPx() + labelHeight / 2f
+                    "Protein" -> (height / 2f) - ProteinBottomPadding.toPx()
+                    "Hydration" -> height - HydrationBottomPadding.toPx() - labelHeight / 2f
+                    "Muscle Mass" -> height - MuscleMassBottomPadding.toPx() - labelHeight / 2f
+                    else -> centerY
                 }
 
-                val textLayoutResult = textMeasurer.measure(
-                    text = labelText,
-                    style = TextStyle(
-                        lineHeight = 13.sp,
-                        textAlign = if (isRight) TextAlign.Start else TextAlign.End,
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    )
-                )
+                // Horizontal end point
+                val horizontalLength = 32.dp.toPx()
+                val endX =
+                    if (segment.isLeft) elbowX - horizontalLength else elbowX + horizontalLength
+                val endY = targetY
 
-                geometries += ChartLabelGeometry(
-                    segment = segment,
-                    text = labelText,
-                    textLayoutWidth = textLayoutResult.size.width.toFloat(),
-                    textLayoutHeight = textLayoutResult.size.height.toFloat()
-                )
-
-                startAngle += sweep
-            }
-
-            geometries.forEach { geometry ->
-                val slot = calloutSlotFor(geometry.segment.label)
-                val textX = when (slot.horizontal) {
-                    CalloutHorizontal.Left -> labelInset + pointerWidth + pointerGap
-                    CalloutHorizontal.Center -> center.x - geometry.textLayoutWidth / 2f + (pointerWidth + pointerGap) / 2f
-                    CalloutHorizontal.Right -> size.width - labelInset - geometry.textLayoutWidth
-                }
-                val textY = when (slot.vertical) {
-                    CalloutVertical.Top -> labelInset
-                    CalloutVertical.Bottom -> size.height - labelInset - geometry.textLayoutHeight
-                }
-                val pointerEndX = textX - pointerGap
-                val pointerStartX = pointerEndX - pointerWidth
-                val pointerY = textY + 6.dp.toPx()
-
+                // Draw angled line segment
                 drawLine(
-                    color = geometry.segment.color.copy(alpha = 0.78f),
-                    start = Offset(pointerStartX, pointerY),
-                    end = Offset(pointerEndX, pointerY),
-                    strokeWidth = 1.6.dp.toPx(),
+                    color = segment.color.copy(alpha = 0.5f),
+                    start = Offset(startX, startY),
+                    end = Offset(elbowX, endY),
+                    strokeWidth = 1.5.dp.toPx(),
                     cap = StrokeCap.Round
                 )
 
-                drawCircle(
-                    color = geometry.segment.color,
-                    radius = 2.5.dp.toPx(),
-                    center = Offset(pointerStartX, pointerY)
+                // Draw horizontal line segment
+                drawLine(
+                    color = segment.color.copy(alpha = 0.5f),
+                    start = Offset(elbowX, endY),
+                    end = Offset(endX, endY),
+                    strokeWidth = 1.5.dp.toPx(),
+                    cap = StrokeCap.Round
                 )
 
-                drawText(
-                    textMeasurer = textMeasurer,
-                    text = geometry.text,
-                    topLeft = Offset(textX, textY),
-                    style = TextStyle(
-                        lineHeight = 13.sp,
-                        textAlign = when (slot.horizontal) {
-                            CalloutHorizontal.Left -> TextAlign.Start
-                            CalloutHorizontal.Center -> TextAlign.Center
-                            CalloutHorizontal.Right -> TextAlign.End
-                        },
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    )
+                // Draw end point dot
+                drawCircle(
+                    color = segment.color,
+                    radius = 3.5.dp.toPx(),
+                    center = Offset(endX, endY)
+                )
+
+                startAngle += sectionAngle
+            }
+
+            // Draw center white circle
+            drawCircle(
+                color = Color.White,
+                radius = innerRadius - 2.dp.toPx(),
+                center = Offset(centerX, centerY)
+            )
+        }
+
+        // Center score column
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Text(
+                text = "84",
+                color = TextPrimary,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 40.sp,
+                style = compactTextStyle()
+            )
+            Text(
+                text = "Composition Score",
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 14.sp,
+                style = compactTextStyle()
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(Color(0xFFE8F5E9))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = "Excellent",
+                    color = Success,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = compactTextStyle()
                 )
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = "Body Score",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
-                style = compactTextStyle()
-            )
-            Text(
-                text = "86",
-                color = TextPrimary,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 36.sp,
-                style = compactTextStyle()
-            )
-            Text(
-                text = "Balanced",
-                color = Success,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                lineHeight = 14.sp,
-                style = compactTextStyle()
-            )
-        }
+        // Position the labels manually around the chart
+        ChartLabel(
+            label = "Body Fat",
+            value = "24.3%",
+            color = Orange,
+            alignment = Alignment.TopStart,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = BodyFatTopPadding)
+        )
+
+        ChartLabel(
+            label = "Muscle Mass",
+            value = "38.7%",
+            color = Green,
+            alignment = Alignment.BottomStart,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 8.dp, bottom = MuscleMassBottomPadding)
+        )
+
+        ChartLabel(
+            label = "Lean Mass",
+            value = "27.5%",
+            color = Blue,
+            alignment = Alignment.TopEnd,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 8.dp, top = LeanMassTopPadding)
+        )
+
+        ChartLabel(
+            label = "Protein",
+            value = "6.3%",
+            color = Purple,
+            alignment = Alignment.CenterEnd,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 8.dp, bottom = ProteinBottomPadding)
+        )
+
+        ChartLabel(
+            label = "Hydration",
+            value = "53.2%",
+            color = Cyan,
+            alignment = Alignment.BottomEnd,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 8.dp, bottom = HydrationBottomPadding)
+        )
     }
 }
-
-
 
 @Composable
 private fun ProgressMessageContent() {
@@ -416,55 +508,13 @@ private fun TrendLineIcon(
     }
 }
 
-private fun pointOnCircle(
-    center: Offset,
-    radius: Float,
-    angleDegrees: Float
-): Offset {
-    val angle = angleDegrees * (PI.toFloat() / 180f)
-    return Offset(
-        x = center.x + cos(angle) * radius,
-        y = center.y + sin(angle) * radius
-    )
-}
-
 private data class SummarySegment(
     val label: String,
     val value: String,
     val color: Color,
-    val amount: Float
+    val amount: Float,
+    val isLeft: Boolean
 )
-
-private data class ChartLabelGeometry(
-    val segment: SummarySegment,
-    val text: androidx.compose.ui.text.AnnotatedString,
-    val textLayoutWidth: Float,
-    val textLayoutHeight: Float
-)
-
-private data class CalloutSlot(
-    val horizontal: CalloutHorizontal,
-    val vertical: CalloutVertical
-)
-
-private enum class CalloutHorizontal {
-    Left,
-    Center,
-    Right
-}
-
-private enum class CalloutVertical {
-    Top,
-    Bottom
-}
-
-private fun calloutSlotFor(label: String) = when (label) {
-    "Protein" -> CalloutSlot(CalloutHorizontal.Left, CalloutVertical.Top)
-    "Lean Mass" -> CalloutSlot(CalloutHorizontal.Right, CalloutVertical.Top)
-    "Hydration" -> CalloutSlot(CalloutHorizontal.Left, CalloutVertical.Bottom)
-    "Muscle Mass" -> CalloutSlot(CalloutHorizontal.Right, CalloutVertical.Bottom)
-    else -> CalloutSlot(CalloutHorizontal.Center, CalloutVertical.Bottom)
-}
 
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
