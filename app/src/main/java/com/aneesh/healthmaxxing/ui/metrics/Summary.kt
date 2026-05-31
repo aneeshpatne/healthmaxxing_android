@@ -6,413 +6,364 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val Ink = Color(0xFF172A35)
-private val MutedInk = Color(0xFF6B7A86)
-private val SoftInk = Color(0xFF8A98A5)
-private val Teal = Color(0xFF087E8B)
-private val Indigo = Color(0xFF4354B8)
-private val PositiveAccent = Color(0xFF34A77B)
-private val ChartTeal = Color(0xFF0D8A8A)
-private val ChartIndigo = Color(0xFF4354B8)
-private val ActiveFilterBlue = Color(0xFF4433FF)
-private val ActiveFilterFill = Color(0xFFEBF8FF)
-private val AxisGray = Color(0xFFA0AEC0)
-private val CardStroke = Color(0xFFE6EEF2)
+private val TextPrimary = Color(0xFF111827)
+private val TextSecondary = Color(0xFF667085)
+private val BorderSoft = Color(0xFFE5E7EB)
+private val SurfaceSoft = Color(0xFFF8FAFC)
+private val Blue = Color(0xFF3B82F6)
+private val Purple = Color(0xFF7C3AED)
+private val Cyan = Color(0xFF06B6D4)
+private val Green = Color(0xFF22C55E)
+private val Orange = Color(0xFFF59E0B)
+private val Success = Color(0xFF16A34A)
+
+private val segments = listOf(
+    SummarySegment("Lean Mass", "27.5%", Blue, 27.5f),
+    SummarySegment("Protein", "6.3%", Purple, 6.3f),
+    SummarySegment("Hydration", "53.2%", Cyan, 53.2f),
+    SummarySegment("Muscle Mass", "38.7%", Green, 38.7f),
+    SummarySegment("Body Fat", "24.3%", Orange, 24.3f)
+)
 
 @Composable
 fun Summary(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        WeightTrendCard()
-        MetricCardsRow()
-    }
-}
-
-@Composable
-private fun WeightTrendCard() {
-    Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .border(1.dp, CardStroke, RoundedCornerShape(24.dp))
+            .background(Color.Transparent)
+            .padding(horizontal = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Weight Trend",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Ink
-                )
-//                TrendFilterControl()
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(194.dp)
-            ) {
-                YAxisLabels(modifier = Modifier.width(24.dp))
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                ) {
-                    SmoothAreaTrendChart(modifier = Modifier.matchParentSize())
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 4.dp)
-                            .offset(x = 9.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            modifier = Modifier
-                                .background(ActiveFilterBlue, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 14.dp, vertical = 7.dp),
-                            text = "83",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Canvas(modifier = Modifier.size(width = 10.dp, height = 6.dp)) {
-                            val caret = Path().apply {
-                                moveTo(size.width / 2f, size.height)
-                                lineTo(0f, 0f)
-                                lineTo(size.width, 0f)
-                                close()
-                            }
-                            drawPath(caret, ActiveFilterBlue)
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 34.dp, end = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                listOf("1 May", "15 May", "29 May", "12 Jun", "26 Jun").forEach { label ->
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Normal,
-                        color = AxisGray
-                    )
-                }
-            }
-        }
+        SummaryHeader()
+        BodyCompositionPanel()
+        ProgressMessage()
     }
 }
 
 @Composable
-private fun TrendFilterControl() {
+private fun SummaryHeader() {
     Row(
-        modifier = Modifier
-            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        listOf("1M", "3M", "6M", "1Y", "All").forEachIndexed { index, label ->
-            val selected = index == 0
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(
-                modifier = Modifier
-                    .background(
-                        color = if (selected) ActiveFilterFill else Color.Transparent,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (selected) ActiveFilterBlue else MutedInk
+                text = "Latest Scan",
+                color = TextPrimary,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 26.sp,
+                style = compactTextStyle()
             )
-        }
-    }
-}
-
-@Composable
-private fun YAxisLabels(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxHeight(),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.Start
-    ) {
-        listOf("84", "82", "80", "78", "76").forEach { label ->
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Normal,
-                color = AxisGray.copy(alpha = .74f)
+                text = "May 12, 2024 • 8:15 AM",
+                color = TextSecondary,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                style = compactTextStyle()
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(SurfaceSoft)
+                .border(1.dp, BorderSoft, CircleShape)
+                .padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.CalendarMonth,
+                contentDescription = "Scan History",
+                modifier = Modifier.size(17.dp),
+                tint = TextPrimary
+            )
+            Spacer(modifier = Modifier.width(7.dp))
+            Text(
+                text = "History",
+                color = TextSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 16.sp,
+                style = compactTextStyle()
             )
         }
     }
 }
 
 @Composable
-private fun MetricCardsRow() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Weight Card (Green Theme)
-        HealthMetricCard(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            title = "Weight",
-            value = "78",
-            unit = "kg",
-            statusText = "Stable",
-            trendUp = true,
-            trendValue = "5 pts",
-            themeColor = Color(0xFF00A859)
-        )
-
-        // Body Age Card (Blue Theme)
-        HealthMetricCard(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            title = "Body Age",
-            value = "28",
-            unit = null,
-            statusText = "Older",
-            trendUp = false,
-            trendValue = "2 years",
-            themeColor = Color(0xFF2563EB)
-        )
-    }
-}
-
-@Composable
-private fun TrendArrow(
-    isUp: Boolean,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Canvas(modifier = modifier) {
-        val strokeWidth = 1.8f.dp.toPx()
-        val w = size.width
-        val h = size.height
-        
-        if (isUp) {
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, h),
-                end = Offset(w / 2f, 0f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, 0f),
-                end = Offset(w * 0.15f, h * 0.35f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, 0f),
-                end = Offset(w * 0.85f, h * 0.35f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-        } else {
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, 0f),
-                end = Offset(w / 2f, h),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, h),
-                end = Offset(w * 0.15f, h * 0.65f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-            drawLine(
-                color = color,
-                start = Offset(w / 2f, h),
-                end = Offset(w * 0.85f, h * 0.65f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round
-            )
-        }
-    }
-}
-
-@Composable
-private fun HealthMetricCard(
-    modifier: Modifier,
-    title: String,
-    value: String,
-    unit: String? = null,
-    statusText: String,
-    trendUp: Boolean,
-    trendValue: String,
-    themeColor: Color
-) {
-    Card(
+private fun BodyCompositionPanel() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
-        modifier = modifier.shadow(
-            elevation = 6.dp,
-            shape = RoundedCornerShape(24.dp),
-            clip = false,
-            ambientColor = Color(0x0A000000),
-            spotColor = Color(0x12000000)
-        )
+        color = Color.White.copy(alpha = .82f),
+        border = BorderStroke(1.dp, BorderSoft),
+        shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 16.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                val chartSize = maxWidth.coerceAtMost(292.dp)
+                DonutChart(chartSize = chartSize)
+            }
+
+            CompositionGrid()
+        }
+    }
+}
+
+@Composable
+private fun DonutChart(chartSize: Dp) {
+    Box(
+        modifier = Modifier.size(chartSize),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(chartSize)) {
+            val strokeWidth = this.size.minDimension * .16f
+            val padding = strokeWidth / 2f
+            val arcSize = Size(this.size.width - padding * 2f, this.size.height - padding * 2f)
+            val topLeft = Offset(padding, padding)
+            val total = segments.sumOf { it.amount.toDouble() }.toFloat()
+            var startAngle = -90f
+
+            drawArc(
+                color = Color(0xFFEFF2F6),
+                startAngle = 0f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+            )
+
+            segments.forEach { segment ->
+                val sweep = (segment.amount / total) * 360f
+                drawArc(
+                    brush = Brush.linearGradient(
+                        colors = listOf(segment.color.copy(alpha = .72f), segment.color),
+                        start = topLeft,
+                        end = Offset(this.size.width, this.size.height)
+                    ),
+                    startAngle = startAngle,
+                    sweepAngle = sweep - 1.4f,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                )
+
+                val markerAngle = startAngle + sweep / 2f
+                val radius = (this.size.minDimension - strokeWidth) / 2f
+                val markerCenter = pointOnCircle(center, radius, markerAngle)
+                drawCircle(
+                    color = Color.White,
+                    radius = strokeWidth * .18f,
+                    center = markerCenter
+                )
+                drawCircle(
+                    color = segment.color,
+                    radius = strokeWidth * .11f,
+                    center = markerCenter
+                )
+
+                startAngle += sweep
+            }
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Text(
-                modifier = Modifier.fillMaxWidth(),
-                text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = Color(0xFF111827),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    platformStyle = PlatformTextStyle(includeFontPadding = false)
-                )
+                text = "Body Score",
+                color = TextSecondary,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                style = compactTextStyle()
             )
+            Text(
+                text = "86",
+                color = TextPrimary,
+                fontSize = 46.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 50.sp,
+                style = compactTextStyle()
+            )
+            Text(
+                text = "Balanced",
+                color = Success,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 16.sp,
+                style = compactTextStyle()
+            )
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(12.dp))
-
+@Composable
+private fun CompositionGrid() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        segments.chunked(2).forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.Bottom
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = value,
-                    fontSize = 52.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = themeColor,
-                    style = TextStyle(
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    )
-                )
-                if (unit != null) {
-                    Text(
-                        text = unit,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color(0xFF6B7280),
-                        modifier = Modifier.padding(start = 2.dp, bottom = 8.dp),
-                        style = TextStyle(
-                            platformStyle = PlatformTextStyle(includeFontPadding = false)
-                        )
+                rowItems.forEach { segment ->
+                    CompositionMetric(
+                        segment = segment,
+                        modifier = Modifier.weight(1f)
                     )
                 }
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+@Composable
+private fun CompositionMetric(
+    segment: SummarySegment,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceSoft)
+            .border(1.dp, BorderSoft, RoundedCornerShape(16.dp))
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(segment.color)
+        )
+        Spacer(modifier = Modifier.width(9.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                modifier = Modifier.fillMaxWidth(),
-                text = statusText,
-                color = Ink,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                style = TextStyle(
-                    platformStyle = PlatformTextStyle(includeFontPadding = false)
-                )
+                text = segment.label,
+                color = TextSecondary,
+                fontSize = 12.sp,
+                lineHeight = 14.sp,
+                maxLines = 1,
+                style = compactTextStyle()
             )
+            Text(
+                text = segment.value,
+                color = TextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 20.sp,
+                maxLines = 1,
+                style = compactTextStyle()
+            )
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+@Composable
+private fun ProgressMessage() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.White.copy(alpha = .78f),
+        border = BorderStroke(1.dp, BorderSoft),
+        shadowElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFEFF6FF)),
+                contentAlignment = Alignment.Center
             ) {
-                TrendArrow(
-                    isUp = trendUp,
-                    color = themeColor,
-                    modifier = Modifier.size(width = 8.dp, height = 12.dp)
+                TrendLineIcon(
+                    modifier = Modifier.size(24.dp),
+                    color = Blue
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Spacer(modifier = Modifier.width(13.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(
                     text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = themeColor)) {
-                            append(trendValue)
+                        withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
+                            append("You’re ")
                         }
-                        append(" ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Normal, color = Color(0xFF6B7280))) {
-                            append("vs last scan")
+                        withStyle(SpanStyle(color = Success, fontWeight = FontWeight.SemiBold)) {
+                            append("2.1%")
+                        }
+                        withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Normal)) {
+                            append(" better than your last scan")
                         }
                     },
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp,
+                    style = compactTextStyle()
+                )
+                Text(
+                    text = "Keep up the great work.",
+                    color = TextSecondary,
                     fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    )
+                    lineHeight = 16.sp,
+                    style = compactTextStyle()
                 )
             }
         }
@@ -420,127 +371,64 @@ private fun HealthMetricCard(
 }
 
 @Composable
-private fun DashboardCard(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+private fun TrendLineIcon(
+    modifier: Modifier,
+    color: Color
 ) {
-    Card(
-        modifier = modifier.shadow(
-            elevation = 12.dp,
-            shape = RoundedCornerShape(24.dp),
-            ambientColor = Color(0x140B2530),
-            spotColor = Color(0x1A0B2530)
-        ),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        border = CardDefaults.outlinedCardBorder().copy(
-            width = 1.dp,
-            brush = SolidColor(CardStroke)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun SmoothAreaTrendChart(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val top = 24.dp.toPx()
-        val bottom = size.height - 18.dp.toPx()
-        val height = bottom - top
-        val dashedGrid = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 7.dp.toPx()))
-        val left = 10.dp.toPx()
-        val right = size.width - 14.dp.toPx()
-        val chartWidth = right - left
-        val y84 = top
-        val y82 = top + height * .25f
-        val y80 = top + height * .50f
-        val y78 = top + height * .75f
-        val y76 = bottom
+        val strokeWidth = 2.2.dp.toPx()
         val points = listOf(
-            Offset(left, y78),
-            Offset(left + chartWidth * .24f, y78),
-            Offset(left + chartWidth * .48f, top + height * .50f),
-            Offset(left + chartWidth * .72f, top + height * .30f),
-            Offset(right, top + height * .12f)
+            Offset(size.width * .10f, size.height * .72f),
+            Offset(size.width * .35f, size.height * .52f),
+            Offset(size.width * .54f, size.height * .62f),
+            Offset(size.width * .88f, size.height * .25f)
         )
 
-        val linePath = Path().apply {
-            moveTo(points[0].x, points[0].y)
-            lineTo(points[1].x, points[1].y)
-            cubicTo(
-                left + chartWidth * .32f, y78,
-                left + chartWidth * .40f, top + height * .52f,
-                points[2].x, points[2].y
-            )
-            cubicTo(
-                left + chartWidth * .58f, top + height * .48f,
-                left + chartWidth * .65f, top + height * .34f,
-                points[3].x, points[3].y
-            )
-            cubicTo(
-                left + chartWidth * .82f, top + height * .30f,
-                left + chartWidth * .92f, top + height * .12f,
-                points[4].x, points[4].y
-            )
-        }
-
-        listOf(y84, y82, y80, y78).forEach { y ->
+        for (index in 0 until points.lastIndex) {
             drawLine(
-                color = AxisGray.copy(alpha = .22f),
-                start = Offset(left, y),
-                end = Offset(right, y),
-                strokeWidth = 1.dp.toPx(),
-                pathEffect = dashedGrid
+                color = color,
+                start = points[index],
+                end = points[index + 1],
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round
             )
         }
         drawLine(
-            color = Color(0xFF4A5568),
-            start = Offset(left, y76),
-            end = Offset(right, y76),
-            strokeWidth = 1.dp.toPx()
+            color = color,
+            start = points.last(),
+            end = Offset(size.width * .83f, size.height * .45f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
         )
-
-        val areaPath = Path().apply {
-            addPath(linePath)
-            lineTo(right, y76)
-            lineTo(left, y76)
-            close()
-        }
-
-        drawPath(
-            path = areaPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    ActiveFilterBlue.copy(alpha = .12f),
-                    ActiveFilterBlue.copy(alpha = 0f)
-                ),
-                startY = top,
-                endY = y76
-            )
+        drawLine(
+            color = color,
+            start = points.last(),
+            end = Offset(size.width * .68f, size.height * .29f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
         )
-        drawPath(
-            path = linePath,
-            color = ActiveFilterBlue,
-            style = Stroke(
-                width = 2.dp.toPx(),
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round
-            )
-        )
-        points.dropLast(1).forEach { point ->
-            drawCircle(
-                color = ActiveFilterBlue,
-                radius = 3.dp.toPx(),
-                center = point
-            )
-        }
-        drawCircle(
-            color = ActiveFilterBlue,
-            radius = 5.dp.toPx(),
-            center = points.last()
-        )
-        drawCircle(color = Color.White, radius = 3.dp.toPx(), center = points.last())
     }
 }
+
+private fun pointOnCircle(
+    center: Offset,
+    radius: Float,
+    angleDegrees: Float
+): Offset {
+    val angle = angleDegrees * (PI.toFloat() / 180f)
+    return Offset(
+        x = center.x + cos(angle) * radius,
+        y = center.y + sin(angle) * radius
+    )
+}
+
+private data class SummarySegment(
+    val label: String,
+    val value: String,
+    val color: Color,
+    val amount: Float
+)
+
+private fun compactTextStyle() = TextStyle(
+    platformStyle = PlatformTextStyle(includeFontPadding = false)
+)
