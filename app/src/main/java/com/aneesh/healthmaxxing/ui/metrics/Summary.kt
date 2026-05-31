@@ -30,9 +30,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
@@ -155,7 +153,7 @@ private fun BodyCompositionPanel() {
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                val chartSize = maxWidth.coerceAtMost(292.dp)
+                val chartSize = maxWidth.coerceAtMost(340.dp)
                 DonutChart(chartSize = chartSize)
             }
 
@@ -177,15 +175,17 @@ private fun DonutChart(chartSize: Dp) {
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(chartSize)) {
-            val donutRadius = this.size.minDimension * 0.20f
+            val donutRadius = this.size.minDimension * 0.31f
             val strokeWidth = donutRadius * 0.28f
             val arcSize = Size(donutRadius * 2, donutRadius * 2)
             val topLeft = Offset(center.x - donutRadius, center.y - donutRadius)
             val total = segments.sumOf { it.amount.toDouble() }.toFloat()
             var startAngle = -90f
 
-            val R_outer = donutRadius + strokeWidth / 2f
-            val R_start = R_outer + 4.dp.toPx()
+            val labelInset = 10.dp.toPx()
+            val pointerWidth = 12.dp.toPx()
+            val pointerGap = 5.dp.toPx()
+            val geometries = mutableListOf<ChartLabelGeometry>()
 
             drawArc(
                 color = Color(0xFFEFF2F6),
@@ -216,41 +216,9 @@ private fun DonutChart(chartSize: Dp) {
                 val midAngle = startAngle + sweep / 2f
                 val angleRad = midAngle * (PI.toFloat() / 180f)
                 val cosA = cos(angleRad)
-                val sinA = sin(angleRad)
 
                 val isRight = cosA >= 0
 
-                val startPoint = Offset(
-                    center.x + cosA * R_start,
-                    center.y + sinA * R_start
-                )
-
-                val textAnchorX = if (isRight) {
-                    center.x + donutRadius + 18.dp.toPx()
-                } else {
-                    center.x - donutRadius - 18.dp.toPx()
-                }
-                
-                // End Y matches startPoint.y to keep the line perfectly horizontal
-                val textAnchor = Offset(textAnchorX, startPoint.y)
-
-                // Draw straight, perfectly horizontal pointer line
-                drawLine(
-                    color = segment.color.copy(alpha = 0.5f),
-                    start = startPoint,
-                    end = textAnchor,
-                    strokeWidth = 1.2.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-
-                // Draw indicator dot
-                drawCircle(
-                    color = segment.color,
-                    radius = 3.dp.toPx(),
-                    center = startPoint
-                )
-
-                // Render labels text next to the connector lines
                 val labelText = buildAnnotatedString {
                     withStyle(SpanStyle(color = segment.color, fontWeight = FontWeight.Bold, fontSize = 12.sp)) {
                         append(segment.value)
@@ -270,27 +238,59 @@ private fun DonutChart(chartSize: Dp) {
                     )
                 )
 
-                val textWidth = textLayoutResult.size.width
-                val textHeight = textLayoutResult.size.height
-                val textX = if (isRight) {
-                    textAnchorX + 5.dp.toPx()
-                } else {
-                    textAnchorX - 5.dp.toPx() - textWidth
-                }
-                val textY = startPoint.y - textHeight / 2f
-
-                drawText(
-                    textMeasurer = textMeasurer,
+                geometries += ChartLabelGeometry(
+                    segment = segment,
                     text = labelText,
-                    topLeft = Offset(textX, textY),
-                    style = TextStyle(
-                        lineHeight = 13.sp,
-                        textAlign = if (isRight) TextAlign.Start else TextAlign.End,
-                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                    )
+                    textLayoutWidth = textLayoutResult.size.width.toFloat(),
+                    textLayoutHeight = textLayoutResult.size.height.toFloat()
                 )
 
                 startAngle += sweep
+            }
+
+            geometries.forEach { geometry ->
+                val slot = calloutSlotFor(geometry.segment.label)
+                val textX = when (slot.horizontal) {
+                    CalloutHorizontal.Left -> labelInset + pointerWidth + pointerGap
+                    CalloutHorizontal.Center -> center.x - geometry.textLayoutWidth / 2f + (pointerWidth + pointerGap) / 2f
+                    CalloutHorizontal.Right -> size.width - labelInset - geometry.textLayoutWidth
+                }
+                val textY = when (slot.vertical) {
+                    CalloutVertical.Top -> labelInset
+                    CalloutVertical.Bottom -> size.height - labelInset - geometry.textLayoutHeight
+                }
+                val pointerEndX = textX - pointerGap
+                val pointerStartX = pointerEndX - pointerWidth
+                val pointerY = textY + 6.dp.toPx()
+
+                drawLine(
+                    color = geometry.segment.color.copy(alpha = 0.78f),
+                    start = Offset(pointerStartX, pointerY),
+                    end = Offset(pointerEndX, pointerY),
+                    strokeWidth = 1.6.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+
+                drawCircle(
+                    color = geometry.segment.color,
+                    radius = 2.5.dp.toPx(),
+                    center = Offset(pointerStartX, pointerY)
+                )
+
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = geometry.text,
+                    topLeft = Offset(textX, textY),
+                    style = TextStyle(
+                        lineHeight = 13.sp,
+                        textAlign = when (slot.horizontal) {
+                            CalloutHorizontal.Left -> TextAlign.Start
+                            CalloutHorizontal.Center -> TextAlign.Center
+                            CalloutHorizontal.Right -> TextAlign.End
+                        },
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    )
+                )
             }
         }
 
@@ -434,6 +434,37 @@ private data class SummarySegment(
     val color: Color,
     val amount: Float
 )
+
+private data class ChartLabelGeometry(
+    val segment: SummarySegment,
+    val text: androidx.compose.ui.text.AnnotatedString,
+    val textLayoutWidth: Float,
+    val textLayoutHeight: Float
+)
+
+private data class CalloutSlot(
+    val horizontal: CalloutHorizontal,
+    val vertical: CalloutVertical
+)
+
+private enum class CalloutHorizontal {
+    Left,
+    Center,
+    Right
+}
+
+private enum class CalloutVertical {
+    Top,
+    Bottom
+}
+
+private fun calloutSlotFor(label: String) = when (label) {
+    "Protein" -> CalloutSlot(CalloutHorizontal.Left, CalloutVertical.Top)
+    "Lean Mass" -> CalloutSlot(CalloutHorizontal.Right, CalloutVertical.Top)
+    "Hydration" -> CalloutSlot(CalloutHorizontal.Left, CalloutVertical.Bottom)
+    "Muscle Mass" -> CalloutSlot(CalloutHorizontal.Right, CalloutVertical.Bottom)
+    else -> CalloutSlot(CalloutHorizontal.Center, CalloutVertical.Bottom)
+}
 
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
