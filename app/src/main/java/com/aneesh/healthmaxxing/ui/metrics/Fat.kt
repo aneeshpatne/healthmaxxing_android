@@ -24,11 +24,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -391,49 +401,182 @@ fun CustomizedCardClickable(
     )
 }
 
+enum class SheetType {
+    FAT_MASS,
+    VISCERAL_FAT,
+    SUBCUTANEOUS_FAT_RATIO,
+    SUBCUTANEOUS_FAT_MASS
+}
+
 @Composable
-private fun Stats() {
-    Column() {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            maxItemsInEachRow = 2,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+private fun MetricStatsCard(
+    label: String,
+    valueText: String,
+    unit: String,
+    caption: String,
+    captionColor: Color,
+    onClick: (() -> Unit)? = null,
+    showInfoIcon: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val cardContent: @Composable ColumnScope.() -> Unit = {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            CustomizedCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 8.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                Text(
+                    text = label.uppercase(),
+                    color = Blue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.1.sp,
+                    style = compactTextStyle()
+                )
+                if (showInfoIcon) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Info",
+                        tint = TextSecondary.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Fat Mass")
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = "Info",
-                            tint = TextSecondary.copy(alpha = 0.7f),
-                            modifier = Modifier.size(12.dp)
+                    Text(
+                        text = valueText,
+                        color = TextPrimary,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = compactTextStyle(),
+                        modifier = Modifier.alignByBaseline()
+                    )
+                    if (unit.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = unit,
+                            color = TextSecondary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            style = compactTextStyle(),
+                            modifier = Modifier.alignByBaseline()
                         )
                     }
                 }
+
+                Text(
+                    text = caption,
+                    color = captionColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Normal,
+                    style = compactTextStyle(),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
-            CustomizedCard(
+        }
+    }
+
+    if (onClick != null) {
+        CustomizedCardClickable(
+            onClick = onClick,
+            modifier = modifier,
+            content = cardContent
+        )
+    } else {
+        CustomizedCard(
+            modifier = modifier,
+            content = cardContent
+        )
+    }
+}
+
+@Composable
+private fun Stats() {
+    var activeSheet by rememberSaveable {
+        mutableStateOf<SheetType?>(null)
+    }
+
+    BottomSheetScreen(
+        activeSheet = activeSheet,
+        onDismissRequest = { activeSheet = null }
+    )
+
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MetricStatsCard(
+                label = "Fat Mass",
+                valueText = "17.4",
+                unit = "kg",
+                caption = "Healthy range",
+                captionColor = Success,
+                onClick = { activeSheet = SheetType.FAT_MASS },
+                showInfoIcon = true,
                 modifier = Modifier
                     .weight(1f)
-                    .height(180.dp)
-            ) { Text("Card1") }
-            CustomizedCard(
+                    .height(150.dp)
+            )
+
+            MetricStatsCard(
+                label = "Visceral Fat",
+                valueText = "6",
+                unit = "",
+                caption = "Healthy index",
+                captionColor = Success,
+                onClick = { activeSheet = SheetType.VISCERAL_FAT },
+                showInfoIcon = true,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            ) { Text("Card1") }
+                    .weight(1f)
+                    .height(150.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MetricStatsCard(
+                label = "Subcutaneous Ratio",
+                valueText = "14.2",
+                unit = "%",
+                caption = "Normal limits",
+                captionColor = Success,
+                onClick = { activeSheet = SheetType.SUBCUTANEOUS_FAT_RATIO },
+                showInfoIcon = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
+
+            MetricStatsCard(
+                label = "Subcutaneous Mass",
+                valueText = "10.7",
+                unit = "kg",
+                caption = "Healthy range",
+                captionColor = Success,
+                onClick = { activeSheet = SheetType.SUBCUTANEOUS_FAT_MASS },
+                showInfoIcon = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
         }
     }
 }
@@ -449,4 +592,114 @@ fun Fat() {
         FatRatioCard()
     }
     Stats()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BottomSheetScreen(
+    activeSheet: SheetType?,
+    onDismissRequest: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false,
+        confirmValueChange = { true }
+    )
+
+    if (activeSheet != null) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissRequest,
+            sheetState = sheetState,
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = {
+                BottomSheetDefaults.DragHandle(
+                    color = CardBorder
+                )
+            }
+        ) {
+            val title: String
+            val headerText: String
+            val explanation: String
+
+            when (activeSheet) {
+                SheetType.FAT_MASS -> {
+                    title = "FAT MASS INFO"
+                    headerText = "Understanding Fat Mass"
+                    explanation = "Fat mass represents the actual weight of fat tissue in your body (measured in kg or lbs), whereas fat ratio is the percentage of your total weight that is fat.\n\nMaintaining a healthy amount of fat mass is vital for hormone regulation, joint cushioning, and protecting internal organs."
+                }
+                SheetType.VISCERAL_FAT -> {
+                    title = "VISCERAL FAT INFO"
+                    headerText = "Understanding Visceral Fat"
+                    explanation = "Visceral fat is the body fat that is stored within the abdominal cavity, surrounding your internal organs (like the liver, pancreas, and kidneys).\n\nUnlike subcutaneous fat, high levels of visceral fat are strongly linked to cardiovascular disease, type 2 diabetes, and other metabolic issues. An index between 1 and 9 is considered healthy."
+                }
+                SheetType.SUBCUTANEOUS_FAT_RATIO -> {
+                    title = "SUBCUTANEOUS FAT RATIO"
+                    headerText = "Understanding Subcutaneous Ratio"
+                    explanation = "Subcutaneous fat is the visible fat layer located directly beneath your skin. It is the type of fat you can pinch.\n\nWhile subcutaneous fat is less metabolically active and less dangerous than visceral fat, keeping its ratio within healthy bounds supports overall fitness and aesthetic health."
+                }
+                SheetType.SUBCUTANEOUS_FAT_MASS -> {
+                    title = "SUBCUTANEOUS FAT MASS"
+                    headerText = "Understanding Subcutaneous Mass"
+                    explanation = "Subcutaneous fat mass represents the absolute weight of the fat layer stored directly under your skin (measured in kg or lbs).\n\nMeasuring this mass helps track real changes in physical fat loss and muscle definition, which percentage calculations alone might not fully reflect."
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Text(
+                    text = title,
+                    color = Blue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    style = compactTextStyle(),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = headerText,
+                    color = TextPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = compactTextStyle(),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Explanatory card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = TrackBackground.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = CardBorder,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = explanation,
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        style = compactTextStyle()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
 }
