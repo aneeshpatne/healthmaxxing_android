@@ -60,16 +60,16 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-private val TextPrimary = Color(0xFF111827)
-private val TextSecondary = Color(0xFF667085)
-private val CardBorder = Color(0xFFE5E7EB)
-private val CardBackground = Color.White.copy(alpha = 0.88f)
-private val Blue = Color(0xFF3B82F6)
+private val TextPrimary = Color(0xFF0F172A)
+private val TextSecondary = Color(0xFF64748B)
+private val CardBorder = Color(0xFFE6EEF2)
+private val CardBackground = Color.White.copy(alpha = 0.92f)
+private val Blue = Color(0xFF2563EB)
 private val Success = Color(0xFF16A34A)
 private val Orange = Color(0xFFF59E0B)
 private val Red = Color(0xFFEF4444)
-private val PillBackground = Color(0xFFE8F5E9)
-private val TrackBackground = Color(0xFFEFF2F6)
+private val PillBackground = Color(0xFFEAF7EE)
+private val TrackBackground = Color(0xFFF8FAFC)
 
 private val ColorLean = Blue
 private val ColorIdeal = Success
@@ -92,10 +92,10 @@ fun FatRatioCard(
             .width(330.dp)
             .height(185.dp)
             .shadow(
-                elevation = 4.dp,
+                elevation = 2.dp,
                 shape = RoundedCornerShape(24.dp),
-                ambientColor = Color.Black.copy(alpha = 0.04f),
-                spotColor = Color.Black.copy(alpha = 0.04f)
+                ambientColor = Color.Black.copy(alpha = 0.03f),
+                spotColor = Color.Black.copy(alpha = 0.03f)
             )
             .clip(RoundedCornerShape(24.dp))
             .background(CardBackground)
@@ -104,7 +104,7 @@ fun FatRatioCard(
                 color = CardBorder,
                 shape = RoundedCornerShape(24.dp)
             )
-            .padding(horizontal = 20.dp, vertical = 17.dp)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -394,7 +394,7 @@ fun CustomizedCardClickable(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.88f)
+            containerColor = CardBackground
         ),
         border = BorderStroke(1.dp, CardBorder),
         content = content
@@ -423,7 +423,7 @@ private fun MetricStatsCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 17.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -458,7 +458,7 @@ private fun MetricStatsCard(
                     Text(
                         text = valueText,
                         color = TextPrimary,
-                        fontSize = 24.sp,
+                        fontSize = 25.sp,
                         fontWeight = FontWeight.SemiBold,
                         style = compactTextStyle(),
                         modifier = Modifier.alignByBaseline()
@@ -679,7 +679,7 @@ fun BottomSheetScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            color = TrackBackground.copy(alpha = 0.5f),
+                            color = TrackBackground,
                             shape = RoundedCornerShape(16.dp)
                         )
                         .border(
