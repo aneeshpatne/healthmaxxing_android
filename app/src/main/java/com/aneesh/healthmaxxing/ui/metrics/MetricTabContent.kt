@@ -39,10 +39,7 @@ fun MetricTabContent(
             }
 
             2 -> {
-                MetricDetailPlaceholder(
-                    title = "Muscle Analysis",
-                    description = "Monitor skeletal muscle mass, growth trends, and balance across body segments."
-                )
+                Muscle()
             }
 
             3 -> {
