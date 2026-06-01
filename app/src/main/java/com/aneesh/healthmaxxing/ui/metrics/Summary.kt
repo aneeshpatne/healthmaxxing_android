@@ -36,6 +36,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +63,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -125,7 +131,7 @@ fun Summary(
 
         BodyCompositionPanel()
         BodyMeasurementsPanel()
-        // WeightDashboard()
+        WeightDashboard()
 //        Stats()
     }
 }
@@ -1153,6 +1159,511 @@ private fun BodyMeasurementsPanel(
     }
 }
 
+private val defaultWeightDataKg = listOf(
+    80.3f, 80.0f, 79.6f, 79.5f, 79.4f,
+    79.0f, 78.7f, 78.5f, 78.4f, 78.2f,
+    78.8f, 78.6f, 78.2f, 78.1f, 78.0f,
+    77.5f, 77.4f, 77.2f, 77.5f, 77.1f,
+    76.9f, 76.7f, 76.7f, 76.6f, 76.1f,
+    76.3f, 76.4f, 76.2f, 76.3f, 76.4f
+)
+
+@Composable
+fun WeightDashboard(
+    currentWeight: Float = 76.4f,
+    unit: String = "kg",
+    dateLabel: String = "May 20, 2024",
+    weights: List<Float> = defaultWeightDataKg,
+    averageWeight: Float = 77.8f,
+    lowestWeight: Float = 76.1f,
+    goalWeight: Float = 72.6f,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.82f),
+        border = BorderStroke(1.dp, BorderSoft),
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp, horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            CurrentWeightHeader(currentWeight, unit, dateLabel)
+            WeightTrendChart(weights, unit)
+            BottomMetricCards(averageWeight, lowestWeight, goalWeight, weights, unit)
+        }
+    }
+}
+
+@Composable
+private fun CurrentWeightHeader(
+    currentWeight: Float,
+    unit: String,
+    dateLabel: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "Current Weight",
+            style = TextStyle(
+                fontSize = 13.sp,
+                color = Color(0xFF64748B),
+                fontWeight = FontWeight.Medium
+            )
+        )
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = String.format(java.util.Locale.US, "%.1f", currentWeight),
+                style = TextStyle(
+                    fontSize = 44.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF0F172A)
+                ),
+                modifier = Modifier.alignByBaseline()
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = unit,
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    color = Color(0xFF475569),
+                    fontWeight = FontWeight.Normal
+                ),
+                modifier = Modifier.alignByBaseline()
+            )
+        }
+        Text(
+            text = dateLabel,
+            style = TextStyle(
+                fontSize = 13.sp,
+                color = Color(0xFF64748B)
+            )
+        )
+    }
+}
+
+@Composable
+private fun WeightTrendChart(
+    weights: List<Float>,
+    unit: String,
+    modifier: Modifier = Modifier
+) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+
+    val minY = 72f
+    val maxY = 82f
+
+    val yAxisLabels = listOf("82", "80", "78", "76", "74", "72")
+    val xAxisLabels = listOf("Apr 21", "Apr 28", "May 5", "May 12", "May 19")
+
+    val textPaint = remember(density) {
+        android.graphics.Paint().apply {
+            color = Color(0xFF64748B).toArgb()
+            textSize = with(density) { 10.sp.toPx() }
+            textAlign = android.graphics.Paint.Align.RIGHT
+            typeface = android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT,
+                android.graphics.Typeface.NORMAL
+            )
+            isAntiAlias = true
+        }
+    }
+
+    val xLabelPaint = remember(density) {
+        android.graphics.Paint().apply {
+            color = Color(0xFF64748B).toArgb()
+            textSize = with(density) { 10.sp.toPx() }
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT,
+                android.graphics.Typeface.NORMAL
+            )
+            isAntiAlias = true
+        }
+    }
+
+    val pillPaint = remember(density) {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.WHITE
+            textSize = with(density) { 12.sp.toPx() }
+            textAlign = android.graphics.Paint.Align.CENTER
+            typeface = android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT,
+                android.graphics.Typeface.BOLD
+            )
+            isAntiAlias = true
+        }
+    }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(220.dp)
+    ) {
+        val leftPaddingPx = 34.dp.toPx()
+        val rightPaddingPx = 16.dp.toPx()
+        val topPaddingPx = 10.dp.toPx()
+        val bottomPaddingPx = 34.dp.toPx()
+
+        val plotLeft = leftPaddingPx
+        val plotRight = size.width - rightPaddingPx
+        val plotTop = topPaddingPx
+        val plotBottom = size.height - bottomPaddingPx
+
+        val plotWidth = plotRight - plotLeft
+        val plotHeight = plotBottom - plotTop
+
+        fun pointToOffset(index: Int, value: Float): Offset {
+            val coercedValue = value.coerceIn(minY, maxY)
+            val x = plotLeft + index * plotWidth / (weights.lastIndex.coerceAtLeast(1))
+            val normalizedY = (coercedValue - minY) / (maxY - minY)
+            val y = plotBottom - normalizedY * plotHeight
+            return Offset(x, y)
+        }
+
+        // 1. Gridlines and y-axis labels
+        yAxisLabels.forEach { labelStr ->
+            val value = labelStr.toFloatOrNull() ?: 72f
+            val normalizedY = (value - minY) / (maxY - minY)
+            val y = plotBottom - normalizedY * plotHeight
+
+            drawLine(
+                color = Color(0xFFE5E7EB),
+                start = Offset(plotLeft, y),
+                end = Offset(plotRight, y),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), 0f)
+            )
+
+            val textHeight = textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
+            val textY = y + textHeight / 3f
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(
+                    labelStr,
+                    plotLeft - 8.dp.toPx(),
+                    textY,
+                    textPaint
+                )
+            }
+        }
+
+        // 2. Area fill under the line
+        if (weights.isNotEmpty()) {
+            val path = androidx.compose.ui.graphics.Path()
+            val firstOffset = pointToOffset(0, weights[0])
+            path.moveTo(firstOffset.x, plotBottom)
+            path.lineTo(firstOffset.x, firstOffset.y)
+            for (i in 1..weights.lastIndex) {
+                val offset = pointToOffset(i, weights[i])
+                path.lineTo(offset.x, offset.y)
+            }
+            val lastOffset = pointToOffset(weights.lastIndex, weights.last())
+            path.lineTo(lastOffset.x, plotBottom)
+            path.close()
+
+            drawPath(
+                path = path,
+                color = Color(0xFF3B82F6).copy(alpha = 0.12f)
+            )
+        }
+
+        // 3. Trend line
+        if (weights.size > 1) {
+            val linePath = androidx.compose.ui.graphics.Path()
+            val firstOffset = pointToOffset(0, weights[0])
+            linePath.moveTo(firstOffset.x, firstOffset.y)
+            for (i in 1..weights.lastIndex) {
+                val offset = pointToOffset(i, weights[i])
+                linePath.lineTo(offset.x, offset.y)
+            }
+            drawPath(
+                path = linePath,
+                color = Color(0xFF3B82F6),
+                style = Stroke(
+                    width = 2.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            )
+        }
+
+        // 4. Data point circles
+        val radiusPx = 2.5.dp.toPx()
+        weights.forEachIndexed { i, value ->
+            val offset = pointToOffset(i, value)
+            drawCircle(
+                color = Color(0xFF3B82F6),
+                radius = radiusPx,
+                center = offset
+            )
+        }
+
+        // 5. Final vertical guide line
+        if (weights.isNotEmpty()) {
+            val finalOffset = pointToOffset(weights.lastIndex, weights.last())
+            drawLine(
+                color = Color(0xFFE5E7EB),
+                start = Offset(finalOffset.x, plotTop),
+                end = Offset(finalOffset.x, plotBottom),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+            )
+
+            // 6. Final highlighted point
+            drawCircle(
+                color = Color(0xFF3B82F6),
+                radius = 5.dp.toPx(),
+                center = finalOffset
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 3.dp.toPx(),
+                center = finalOffset
+            )
+
+            // 7. Current-value pill
+            val pillText = String.format(java.util.Locale.US, "%.1f", weights.last())
+            val textWidth = pillPaint.measureText(pillText)
+            val textHeight = pillPaint.fontMetrics.descent - pillPaint.fontMetrics.ascent
+
+            val pillPaddingHorizontal = 8.dp.toPx()
+            val pillPaddingVertical = 5.dp.toPx()
+
+            val pillWidth = textWidth + pillPaddingHorizontal * 2f
+            val pillHeight = textHeight + pillPaddingVertical * 2f
+
+            val pillRight = finalOffset.x - 8.dp.toPx()
+            val pillLeft = pillRight - pillWidth
+            val pillBottom = finalOffset.y - 8.dp.toPx()
+            val pillTop = pillBottom - pillHeight
+
+            val cornerRadiusPx = 8.dp.toPx()
+            drawRoundRect(
+                color = Color(0xFF3B82F6),
+                topLeft = Offset(pillLeft, pillTop),
+                size = Size(pillWidth, pillHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                    cornerRadiusPx,
+                    cornerRadiusPx
+                )
+            )
+
+            val textX = pillLeft + pillWidth / 2f
+            val textY =
+                pillTop + pillHeight / 2f - (pillPaint.fontMetrics.ascent + pillPaint.fontMetrics.descent) / 2f
+
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(
+                    pillText,
+                    textX,
+                    textY,
+                    pillPaint
+                )
+            }
+        }
+
+        // 8. X-axis labels and unit label
+        xAxisLabels.forEachIndexed { i, label ->
+            val labelX = when (i) {
+                0 -> {
+                    xLabelPaint.textAlign = android.graphics.Paint.Align.LEFT
+                    plotLeft + 4.dp.toPx()
+                }
+
+                xAxisLabels.lastIndex -> {
+                    xLabelPaint.textAlign = android.graphics.Paint.Align.RIGHT
+                    plotRight - 4.dp.toPx()
+                }
+
+                else -> {
+                    xLabelPaint.textAlign = android.graphics.Paint.Align.CENTER
+                    plotLeft + i * plotWidth / (xAxisLabels.size - 1)
+                }
+            }
+            val labelY = size.height - 10.dp.toPx()
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(
+                    label,
+                    labelX,
+                    labelY,
+                    xLabelPaint
+                )
+            }
+        }
+
+        drawIntoCanvas { canvas ->
+            canvas.nativeCanvas.drawText(
+                unit,
+                plotLeft - 8.dp.toPx(),
+                size.height - 10.dp.toPx(),
+                textPaint
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomMetricCards(
+    averageWeight: Float,
+    lowestWeight: Float,
+    goalWeight: Float,
+    weights: List<Float>,
+    unit: String,
+    modifier: Modifier = Modifier
+) {
+    val computedAvg = if (weights.isNotEmpty()) weights.average().toFloat() else averageWeight
+    val computedLowest =
+        if (weights.isNotEmpty()) (weights.minOrNull() ?: lowestWeight) else lowestWeight
+    val computedCurrent = if (weights.isNotEmpty()) weights.last() else averageWeight
+
+    val avgDiff = computedAvg - computedCurrent
+    val averageCaption = if (avgDiff >= 0) {
+        String.format(java.util.Locale.US, "↓ %.1f %s vs last 30D", avgDiff, unit)
+    } else {
+        String.format(java.util.Locale.US, "↑ %.1f %s vs last 30D", -avgDiff, unit)
+    }
+
+    val goalDiff = computedCurrent - goalWeight
+    val goalCaption = if (goalDiff > 0) {
+        String.format(java.util.Locale.US, "%.1f %s to go", goalDiff, unit)
+    } else {
+        "Goal reached!"
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        MetricCard(
+            icon = Icons.AutoMirrored.Filled.ShowChart,
+            label = "Average",
+            valueText = String.format(java.util.Locale.US, "%.1f", computedAvg),
+            unit = unit,
+            caption = averageCaption,
+            captionColor = Color(0xFF3B82F6),
+            modifier = Modifier
+                .weight(1f)
+                .height(124.dp)
+        )
+        MetricCard(
+            icon = Icons.Default.ArrowDownward,
+            label = "Lowest",
+            valueText = String.format(java.util.Locale.US, "%.1f", computedLowest),
+            unit = unit,
+            caption = "May 18, 2024",
+            captionColor = Color(0xFF64748B),
+            modifier = Modifier
+                .weight(1f)
+                .height(124.dp)
+        )
+        MetricCard(
+            icon = Icons.Default.MyLocation,
+            label = "Goal",
+            valueText = String.format(java.util.Locale.US, "%.1f", goalWeight),
+            unit = unit,
+            caption = goalCaption,
+            captionColor = Color(0xFF3B82F6),
+            modifier = Modifier
+                .weight(1f)
+                .height(124.dp)
+        )
+    }
+}
+
+@Composable
+private fun MetricCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    valueText: String,
+    unit: String,
+    caption: String,
+    captionColor: Color,
+    modifier: Modifier = Modifier
+) {
+    CustomizedCard(
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(Color(0xFFEFF6FF), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color(0xFF3B82F6),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = valueText,
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        ),
+                        modifier = Modifier.alignByBaseline()
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = unit,
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            color = Color(0xFF64748B)
+                        ),
+                        modifier = Modifier.alignByBaseline()
+                    )
+                }
+            }
+
+            Text(
+                text = caption,
+                style = TextStyle(
+                    fontSize = 9.5.sp,
+                    lineHeight = 12.sp,
+                    color = captionColor,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 2
+            )
+        }
+    }
+}
+
+@Composable
 private fun MeasurementLabel(
     label: String,
     value: String,
@@ -1250,3 +1761,4 @@ private fun CompactMetricItem(
         )
     }
 }
+
