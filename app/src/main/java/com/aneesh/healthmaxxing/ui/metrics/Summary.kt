@@ -54,6 +54,16 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import com.aneesh.healthmaxxing.R
 import kotlin.math.PI
 import kotlin.math.cos
@@ -99,8 +109,9 @@ fun Summary(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         SummaryHeader()
-        BodyCompositionPanel()
         BodyOverviewCard()
+
+        BodyCompositionPanel()
         Stats()
     }
 }
@@ -121,6 +132,7 @@ private fun CustomizedCard(
     )
 }
 
+@OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 private fun BodyOverviewCard(
     modifier: Modifier = Modifier
@@ -132,8 +144,9 @@ private fun BodyOverviewCard(
             .clip(RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF7F5EC)
+            containerColor = Color.White.copy(alpha = 0.88f)
         ),
+        border = BorderStroke(1.dp, Color(0xFFE6EEF2)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -151,7 +164,7 @@ private fun BodyOverviewCard(
             ) {
                 Text(
                     text = "AI OVERVIEW",
-                    color = Color(0xFF4D7F3A),
+                    color = Blue,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp,
@@ -160,7 +173,7 @@ private fun BodyOverviewCard(
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "You’re making excellent progress.",
-                    color = Color(0xFF10120D),
+                    color = TextPrimary,
                     fontSize = 20.sp,
                     lineHeight = 24.sp,
                     fontWeight = FontWeight.Medium,
@@ -170,7 +183,7 @@ private fun BodyOverviewCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Your body composition has improved significantly over the past 8 weeks.",
-                    color = Color(0xFF8B8C83),
+                    color = TextSecondary,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
                     fontWeight = FontWeight.Normal,
@@ -187,7 +200,7 @@ private fun BodyOverviewCard(
             ) {
                 // Subtle dotted pattern background
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val dotColor = Color(0xFFD7D7C8).copy(alpha = 0.5f)
+                    val dotColor = Blue.copy(alpha = 0.18f)
                     val dotRadius = 1.dp.toPx()
                     val spacing = 6.dp.toPx()
 
@@ -204,12 +217,20 @@ private fun BodyOverviewCard(
                     }
                 }
 
+                val image = AnimatedImageVector.animatedVectorResource(R.drawable.progress)
+                var atEnd by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    delay(300)
+                    atEnd = true
+                }
+                val painter = rememberAnimatedVectorPainter(image, atEnd)
+
                 Image(
-                    painter = painterResource(id = R.drawable.body),
-                    contentDescription = "Body composition illustration",
+                    painter = painter,
+                    contentDescription = "Progress illustration",
                     modifier = Modifier
                         .padding(end = 0.dp)
-                        .requiredSize(220.dp),
+                        .requiredSize(150.dp),
                     contentScale = ContentScale.Fit
                 )
             }
