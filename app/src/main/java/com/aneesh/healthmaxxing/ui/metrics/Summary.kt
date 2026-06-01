@@ -1,5 +1,16 @@
 package com.aneesh.healthmaxxing.ui.metrics
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -17,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
@@ -32,13 +44,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -52,22 +71,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import com.aneesh.healthmaxxing.R
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
 
 private val TextPrimary = Color(0xFF111827)
 private val TextSecondary = Color(0xFF667085)
@@ -112,7 +124,9 @@ fun Summary(
         BodyOverviewCard()
 
         BodyCompositionPanel()
-        Stats()
+        BodyMeasurementsPanel()
+        // WeightDashboard()
+//        Stats()
     }
 }
 
@@ -694,3 +708,545 @@ private data class SummarySegment(
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
+
+@Composable
+private fun BodyMeasurementsPanel(
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+
+    // 1. Pulsing halo size & opacity for markers
+    val markerPulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "markerPulseScale"
+    )
+    val markerPulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.04f,
+        targetValue = 0.20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "markerPulseAlpha"
+    )
+
+    // 2. Flowing dash offset for dotted lines (crawling animation)
+    val dashOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dashOffset"
+    )
+
+    // 3. Breathing grid opacity
+    val gridAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.65f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "gridAlpha"
+    )
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, BorderSoft),
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp)
+            ) {
+                val widthDp = maxWidth
+                val heightDp = maxHeight
+
+                val bodySizeDp = 210.dp
+                val density = androidx.compose.ui.platform.LocalDensity.current
+
+                val widthPx = with(density) { widthDp.toPx() }
+                val heightPx = with(density) { heightDp.toPx() }
+                val bodySizePx = with(density) { bodySizeDp.toPx() }
+
+                val leftPx = (widthPx - bodySizePx) / 2
+                val topPx = (heightPx - bodySizePx) / 2
+
+                // 1. Concentric scan circles in background (breathing opacity)
+                Canvas(
+                    modifier = Modifier
+                        .size(bodySizeDp)
+                        .align(Alignment.Center)
+                ) {
+                    val stroke = Stroke(
+                        width = 0.8.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 8f), 0f)
+                    )
+                    val gridColor = Color(0xFFE2E8F0).copy(alpha = gridAlpha)
+
+                    drawCircle(
+                        color = gridColor,
+                        radius = size.width * 0.44f,
+                        style = stroke
+                    )
+                    drawCircle(
+                        color = gridColor,
+                        radius = size.width * 0.30f,
+                        style = stroke
+                    )
+                    drawCircle(
+                        color = gridColor,
+                        radius = size.width * 0.16f,
+                        style = stroke
+                    )
+                }
+
+                // 2. Centered body image
+                Box(
+                    modifier = Modifier
+                        .size(bodySizeDp)
+                        .align(Alignment.Center)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.body),
+                        contentDescription = "Body illustration",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
+                // 3. Canvas overlay for lines and markers
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val scale = bodySizePx / 100f
+
+                    fun getCanvasCoords(vx: Float, vy: Float): Offset {
+                        return Offset(
+                            x = leftPx + vx * scale,
+                            y = topPx + vy * scale
+                        )
+                    }
+
+                    val leftLineEndX = 88.dp.toPx()
+                    val rightLineEndX = widthPx - 88.dp.toPx()
+
+                    // Separate dotted path effects to make the dots flow outwards from center
+                    val dottedEffectRight = PathEffect.dashPathEffect(
+                        floatArrayOf(5f, 5f), phase = dashOffset
+                    )
+                    val dottedEffectLeft = PathEffect.dashPathEffect(
+                        floatArrayOf(5f, 5f), phase = -dashOffset
+                    )
+
+                    val markerColor = Color(0xFF3B82F6) // soft blue marker accent
+                    val lineColor = Color(0xFF93C5FD).copy(alpha = 0.5f) // soft blue dotted lines
+
+                    fun drawMarkerAndLine(
+                        vx: Float,
+                        vy: Float,
+                        toRight: Boolean
+                    ) {
+                        val markerPos = getCanvasCoords(vx, vy)
+                        val endX = if (toRight) rightLineEndX else leftLineEndX
+                        val lineEnd = Offset(endX, markerPos.y)
+                        val dottedEffect = if (toRight) dottedEffectRight else dottedEffectLeft
+
+                        // Thin dotted guide line (always full length, flowing animated dots)
+                        drawLine(
+                            color = lineColor,
+                            start = markerPos,
+                            end = lineEnd,
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = dottedEffect,
+                            cap = StrokeCap.Round
+                        )
+
+                        // Pulsing Outer Halo
+                        drawCircle(
+                            color = markerColor.copy(alpha = markerPulseAlpha),
+                            radius = 9.dp.toPx() * markerPulseScale,
+                            center = markerPos
+                        )
+
+                        // Core Ring
+                        drawCircle(
+                            color = markerColor,
+                            radius = 4.5.dp.toPx(),
+                            center = markerPos
+                        )
+
+                        // Center dot
+                        drawCircle(
+                            color = Color.White,
+                            radius = 2.dp.toPx(),
+                            center = markerPos
+                        )
+                    }
+
+                    // Neck: Left side
+                    drawMarkerAndLine(50.0f, 14.5f, toRight = false)
+
+                    // Shoulder: Right side
+                    drawMarkerAndLine(62.0f, 22.5f, toRight = true)
+
+                    // Chest: Left side
+                    drawMarkerAndLine(50.0f, 28.0f, toRight = false)
+
+                    // Bicep: Right side
+                    drawMarkerAndLine(63.5f, 34.0f, toRight = true)
+
+                    // Waist: Left side
+                    drawMarkerAndLine(50.0f, 42.0f, toRight = false)
+
+                    // Thighs: Right side
+                    drawMarkerAndLine(56.5f, 58.0f, toRight = true)
+
+                    // Calf: Left side
+                    drawMarkerAndLine(43.0f, 79.0f, toRight = false)
+                }
+
+                // 4. Position labels at side ends
+                val scale = bodySizePx / 100f
+
+                // Right side labels
+                MeasurementLabel(
+                    label = "Shoulder",
+                    value = "114.6",
+                    unit = "cm",
+                    isLeft = false,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 22.5f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Bicep",
+                    value = "33.2",
+                    unit = "cm",
+                    isLeft = false,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 34.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Thighs",
+                    value = "58.3",
+                    unit = "cm",
+                    isLeft = false,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 58.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                // Left side labels
+                MeasurementLabel(
+                    label = "Neck",
+                    value = "38.2",
+                    unit = "cm",
+                    isLeft = true,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 14.5f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Chest",
+                    value = "102.6",
+                    unit = "cm",
+                    isLeft = true,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 28.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Waist",
+                    value = "82.1",
+                    unit = "cm",
+                    isLeft = true,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 42.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Calf",
+                    value = "38.5",
+                    unit = "cm",
+                    isLeft = true,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 79.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Redesigned metrics panel showing ratios
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(Color(0xFFF8FAFC), RoundedCornerShape(16.dp))
+                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CompactMetricItem(
+                    label = "Shoulder\n÷ Waist",
+                    value = "1.40",
+                    unit = "",
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(24.dp)
+                        .background(Color(0xFFE2E8F0))
+                )
+                CompactMetricItem(
+                    label = "Chest\n÷ Waist",
+                    value = "1.25",
+                    unit = "",
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(24.dp)
+                        .background(Color(0xFFE2E8F0))
+                )
+                CompactMetricItem(
+                    label = "Bicep\n÷ Waist",
+                    value = "0.40",
+                    unit = "",
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(24.dp)
+                        .background(Color(0xFFE2E8F0))
+                )
+                CompactMetricItem(
+                    label = "Thigh\n÷ Waist",
+                    value = "0.71",
+                    unit = "",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Body Type Indicator
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(Color(0xFFEFF6FF), Color(0xFFF0FDFA))
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFFDBEAFE),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "BODY TYPE",
+                        color = Color(0xFF3B82F6),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        style = compactTextStyle()
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Athletic V-Taper",
+                        color = Color(0xFF0F172A),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = compactTextStyle()
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF3B82F6).copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "V-SHAPE",
+                        color = Color(0xFF3B82F6),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        style = compactTextStyle()
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun MeasurementLabel(
+    label: String,
+    value: String,
+    unit: String,
+    isLeft: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.width(75.dp),
+        horizontalAlignment = if (isLeft) Alignment.End else Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(1.dp)
+    ) {
+        Text(
+            text = label.uppercase(),
+            color = Color(0xFF94A3B8), // slate-400
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp,
+            style = compactTextStyle(),
+            textAlign = if (isLeft) TextAlign.End else TextAlign.Start
+        )
+        Text(
+            text = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        fontSize = 14.sp
+                    )
+                ) {
+                    append(value)
+                }
+                withStyle(
+                    SpanStyle(
+                        fontWeight = FontWeight.Normal,
+                        color = TextSecondary,
+                        fontSize = 10.sp
+                    )
+                ) {
+                    append(" $unit")
+                }
+            },
+            style = compactTextStyle(),
+            textAlign = if (isLeft) TextAlign.End else TextAlign.Start
+        )
+    }
+}
+
+@Composable
+private fun CompactMetricItem(
+    label: String,
+    value: String,
+    unit: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Text(
+            text = label.uppercase(),
+            color = Color(0xFF94A3B8),
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.4.sp,
+            style = compactTextStyle(),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        fontSize = 16.sp
+                    )
+                ) {
+                    append(value)
+                }
+                if (unit.isNotEmpty()) {
+                    withStyle(
+                        SpanStyle(
+                            fontWeight = FontWeight.Medium,
+                            color = TextSecondary,
+                            fontSize = 11.sp
+                        )
+                    ) {
+                        append(unit)
+                    }
+                }
+            },
+            style = compactTextStyle(),
+            textAlign = TextAlign.Center
+        )
+    }
+}
