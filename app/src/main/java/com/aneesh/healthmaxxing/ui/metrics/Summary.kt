@@ -57,7 +57,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -86,11 +85,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 
-private val TextPrimary = Color(0xFF111827)
-private val TextSecondary = Color(0xFF667085)
-private val BorderSoft = Color(0xFFE5E7EB)
+private val TextPrimary = Color(0xFF0F172A)
+private val TextSecondary = Color(0xFF64748B)
+private val BorderSoft = Color(0xFFE6EEF2)
 private val SurfaceSoft = Color(0xFFF8FAFC)
-private val Blue = Color(0xFF3B82F6)
+private val Blue = Color(0xFF2563EB)
 private val Purple = Color(0xFF7C3AED)
 private val Cyan = Color(0xFF06B6D4)
 private val Green = Color(0xFF22C55E)
@@ -144,7 +143,7 @@ fun CustomizedCard(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.82f)
+            containerColor = Color.White.copy(alpha = 0.92f)
         ),
         border = BorderStroke(1.dp, BorderSoft),
         content = content
@@ -163,7 +162,7 @@ private fun BodyOverviewCard(
             .clip(RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.88f)
+            containerColor = Color.White.copy(alpha = 0.92f)
         ),
         border = BorderStroke(1.dp, Color(0xFFE6EEF2)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -315,7 +314,7 @@ private fun BodyCompositionPanel() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = .82f),
+        color = Color.White.copy(alpha = 0.92f),
         border = BorderStroke(1.dp, BorderSoft),
         shadowElevation = 0.dp
     ) {
@@ -832,7 +831,7 @@ private fun BodyMeasurementsPanel(
                         floatArrayOf(5f, 5f), phase = -dashOffset
                     )
 
-                    val markerColor = Color(0xFF3B82F6) // soft blue marker accent
+                    val markerColor = Blue // soft blue marker accent
                     val lineColor = Color(0xFF93C5FD).copy(alpha = 0.5f) // soft blue dotted lines
 
                     fun drawMarkerAndLine(
@@ -1081,9 +1080,7 @@ private fun BodyMeasurementsPanel(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(Color(0xFFEFF6FF), Color(0xFFF0FDFA))
-                        ),
+                        color = SurfaceSoft,
                         shape = RoundedCornerShape(16.dp)
                     )
                     .border(
@@ -1098,7 +1095,7 @@ private fun BodyMeasurementsPanel(
                 Column {
                     Text(
                         text = "BODY TYPE",
-                        color = Color(0xFF3B82F6),
+                        color = Blue,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
@@ -1107,7 +1104,7 @@ private fun BodyMeasurementsPanel(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Athletic V-Taper",
-                        color = Color(0xFF0F172A),
+                        color = TextPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         style = compactTextStyle()
@@ -1115,12 +1112,12 @@ private fun BodyMeasurementsPanel(
                 }
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFF3B82F6).copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .background(Blue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = "V-SHAPE",
-                        color = Color(0xFF3B82F6),
+                        color = Blue,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp,
@@ -1155,7 +1152,7 @@ fun WeightDashboard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.82f),
+        color = Color.White.copy(alpha = 0.92f),
         border = BorderStroke(1.dp, BorderSoft),
         shadowElevation = 0.dp
     ) {
@@ -1189,7 +1186,7 @@ private fun CurrentWeightHeader(
             text = "Current Weight",
             style = TextStyle(
                 fontSize = 13.sp,
-                color = Color(0xFF64748B),
+                color = TextSecondary,
                 fontWeight = FontWeight.Medium
             )
         )
@@ -1202,7 +1199,7 @@ private fun CurrentWeightHeader(
                 style = TextStyle(
                     fontSize = 44.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF0F172A)
+                    color = TextPrimary
                 ),
                 modifier = Modifier.alignByBaseline()
             )
@@ -1211,7 +1208,7 @@ private fun CurrentWeightHeader(
                 text = unit,
                 style = TextStyle(
                     fontSize = 16.sp,
-                    color = Color(0xFF475569),
+                    color = TextSecondary,
                     fontWeight = FontWeight.Normal
                 ),
                 modifier = Modifier.alignByBaseline()
@@ -1221,7 +1218,7 @@ private fun CurrentWeightHeader(
             text = dateLabel,
             style = TextStyle(
                 fontSize = 13.sp,
-                color = Color(0xFF64748B)
+                color = TextSecondary
             )
         )
     }
@@ -1243,7 +1240,7 @@ private fun WeightTrendChart(
 
     val textPaint = remember(density) {
         android.graphics.Paint().apply {
-            color = Color(0xFF64748B).toArgb()
+            color = TextSecondary.toArgb()
             textSize = with(density) { 10.sp.toPx() }
             textAlign = android.graphics.Paint.Align.RIGHT
             typeface = android.graphics.Typeface.create(
@@ -1256,7 +1253,7 @@ private fun WeightTrendChart(
 
     val xLabelPaint = remember(density) {
         android.graphics.Paint().apply {
-            color = Color(0xFF64748B).toArgb()
+            color = TextSecondary.toArgb()
             textSize = with(density) { 10.sp.toPx() }
             textAlign = android.graphics.Paint.Align.CENTER
             typeface = android.graphics.Typeface.create(
@@ -1306,6 +1303,41 @@ private fun WeightTrendChart(
             return Offset(x, y)
         }
 
+        fun smoothPath(points: List<Offset>): androidx.compose.ui.graphics.Path {
+            val path = androidx.compose.ui.graphics.Path()
+            if (points.isEmpty()) return path
+
+            path.moveTo(points.first().x, points.first().y)
+            if (points.size == 1) return path
+
+            for (i in 0 until points.lastIndex) {
+                val p0 = points.getOrElse(i - 1) { points[i] }
+                val p1 = points[i]
+                val p2 = points[i + 1]
+                val p3 = points.getOrElse(i + 2) { p2 }
+
+                val control1 = Offset(
+                    x = p1.x + (p2.x - p0.x) / 6f,
+                    y = (p1.y + (p2.y - p0.y) / 6f).coerceIn(plotTop, plotBottom)
+                )
+                val control2 = Offset(
+                    x = p2.x - (p3.x - p1.x) / 6f,
+                    y = (p2.y - (p3.y - p1.y) / 6f).coerceIn(plotTop, plotBottom)
+                )
+
+                path.cubicTo(
+                    control1.x,
+                    control1.y,
+                    control2.x,
+                    control2.y,
+                    p2.x,
+                    p2.y
+                )
+            }
+
+            return path
+        }
+
         // 1. Gridlines and y-axis labels
         yAxisLabels.forEach { labelStr ->
             val value = labelStr.toFloatOrNull() ?: 72f
@@ -1313,7 +1345,7 @@ private fun WeightTrendChart(
             val y = plotBottom - normalizedY * plotHeight
 
             drawLine(
-                color = Color(0xFFE5E7EB),
+                color = BorderSoft,
                 start = Offset(plotLeft, y),
                 end = Offset(plotRight, y),
                 strokeWidth = 1.dp.toPx(),
@@ -1334,49 +1366,38 @@ private fun WeightTrendChart(
 
         // 2. Area fill under the line
         if (weights.isNotEmpty()) {
-            val path = androidx.compose.ui.graphics.Path()
-            val firstOffset = pointToOffset(0, weights[0])
-            path.moveTo(firstOffset.x, plotBottom)
-            path.lineTo(firstOffset.x, firstOffset.y)
-            for (i in 1..weights.lastIndex) {
-                val offset = pointToOffset(i, weights[i])
-                path.lineTo(offset.x, offset.y)
-            }
-            val lastOffset = pointToOffset(weights.lastIndex, weights.last())
+            val points = weights.mapIndexed { i, value -> pointToOffset(i, value) }
+            val path = smoothPath(points)
+            val lastOffset = points.last()
             path.lineTo(lastOffset.x, plotBottom)
+            path.lineTo(points.first().x, plotBottom)
             path.close()
 
             drawPath(
                 path = path,
-                color = Color(0xFF3B82F6).copy(alpha = 0.12f)
+                color = Blue.copy(alpha = 0.10f)
             )
         }
 
         // 3. Trend line
         if (weights.size > 1) {
-            val linePath = androidx.compose.ui.graphics.Path()
-            val firstOffset = pointToOffset(0, weights[0])
-            linePath.moveTo(firstOffset.x, firstOffset.y)
-            for (i in 1..weights.lastIndex) {
-                val offset = pointToOffset(i, weights[i])
-                linePath.lineTo(offset.x, offset.y)
-            }
+            val linePath = smoothPath(weights.mapIndexed { i, value -> pointToOffset(i, value) })
             drawPath(
                 path = linePath,
-                color = Color(0xFF3B82F6),
+                color = Blue,
                 style = Stroke(
-                    width = 2.dp.toPx(),
+                    width = 2.5.dp.toPx(),
                     cap = StrokeCap.Round
                 )
             )
         }
 
         // 4. Data point circles
-        val radiusPx = 2.5.dp.toPx()
+        val radiusPx = 1.75.dp.toPx()
         weights.forEachIndexed { i, value ->
             val offset = pointToOffset(i, value)
             drawCircle(
-                color = Color(0xFF3B82F6),
+                color = Blue.copy(alpha = 0.45f),
                 radius = radiusPx,
                 center = offset
             )
@@ -1386,7 +1407,7 @@ private fun WeightTrendChart(
         if (weights.isNotEmpty()) {
             val finalOffset = pointToOffset(weights.lastIndex, weights.last())
             drawLine(
-                color = Color(0xFFE5E7EB),
+                color = BorderSoft,
                 start = Offset(finalOffset.x, plotTop),
                 end = Offset(finalOffset.x, plotBottom),
                 strokeWidth = 1.dp.toPx(),
@@ -1395,7 +1416,7 @@ private fun WeightTrendChart(
 
             // 6. Final highlighted point
             drawCircle(
-                color = Color(0xFF3B82F6),
+                color = Blue,
                 radius = 5.dp.toPx(),
                 center = finalOffset
             )
@@ -1423,7 +1444,7 @@ private fun WeightTrendChart(
 
             val cornerRadiusPx = 8.dp.toPx()
             drawRoundRect(
-                color = Color(0xFF3B82F6),
+                color = Blue,
                 topLeft = Offset(pillLeft, pillTop),
                 size = Size(pillWidth, pillHeight),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(
@@ -1524,7 +1545,7 @@ private fun BottomMetricCards(
             valueText = String.format(java.util.Locale.US, "%.1f", computedAvg),
             unit = unit,
             caption = averageCaption,
-            captionColor = Color(0xFF3B82F6),
+            captionColor = Blue,
             modifier = Modifier
                 .weight(1f)
                 .height(124.dp)
@@ -1535,7 +1556,7 @@ private fun BottomMetricCards(
             valueText = String.format(java.util.Locale.US, "%.1f", computedLowest),
             unit = unit,
             caption = "May 18, 2024",
-            captionColor = Color(0xFF64748B),
+            captionColor = TextSecondary,
             modifier = Modifier
                 .weight(1f)
                 .height(124.dp)
@@ -1546,7 +1567,7 @@ private fun BottomMetricCards(
             valueText = String.format(java.util.Locale.US, "%.1f", goalWeight),
             unit = unit,
             caption = goalCaption,
-            captionColor = Color(0xFF3B82F6),
+            captionColor = Blue,
             modifier = Modifier
                 .weight(1f)
                 .height(124.dp)
@@ -1576,13 +1597,13 @@ private fun MetricCard(
             Box(
                 modifier = Modifier
                     .size(28.dp)
-                    .background(Color(0xFFEFF6FF), CircleShape),
+                    .background(Blue.copy(alpha = 0.10f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color(0xFF3B82F6),
+                    tint = Blue,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -1594,7 +1615,7 @@ private fun MetricCard(
                     text = label,
                     style = TextStyle(
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B),
+                        color = TextSecondary,
                         fontWeight = FontWeight.Medium
                     )
                 )
@@ -1606,7 +1627,7 @@ private fun MetricCard(
                         style = TextStyle(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = TextPrimary
                         ),
                         modifier = Modifier.alignByBaseline()
                     )
@@ -1615,7 +1636,7 @@ private fun MetricCard(
                         text = unit,
                         style = TextStyle(
                             fontSize = 11.sp,
-                            color = Color(0xFF64748B)
+                            color = TextSecondary
                         ),
                         modifier = Modifier.alignByBaseline()
                     )
