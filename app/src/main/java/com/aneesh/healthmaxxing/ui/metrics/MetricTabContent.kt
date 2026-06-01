@@ -35,10 +35,7 @@ fun MetricTabContent(
             }
 
             1 -> {
-                MetricDetailPlaceholder(
-                    title = "Fat Composition",
-                    description = "Track body fat percentage, visceral fat level, and subcutaneous fat distribution over time."
-                )
+                Fat()
             }
 
             2 -> {

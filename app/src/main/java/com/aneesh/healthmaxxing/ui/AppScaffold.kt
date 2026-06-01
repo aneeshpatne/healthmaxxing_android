@@ -17,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.aneesh.healthmaxxing.account.AccountState
 import com.aneesh.healthmaxxing.account.AccountViewModel
 import com.aneesh.healthmaxxing.navigation.Destination
 import com.aneesh.healthmaxxing.ui.login.login
@@ -25,50 +26,70 @@ import com.aneesh.healthmaxxing.ui.record.RecordScreen
 
 @Composable
 fun AppScaffold(vm: AccountViewModel = hiltViewModel()) {
+    val accountState by vm.accountState.collectAsState()
+
+    when (accountState) {
+        AccountState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Loading...")
+            }
+        }
+
+        AccountState.LoggedOut -> {
+            login()
+        }
+
+        is AccountState.LoggedIn -> {
+            MainAppScaffold()
+        }
+    }
+}
+
+@Composable
+private fun MainAppScaffold() {
     val navController = rememberNavController()
     var selectedDestination by rememberSaveable {
         mutableIntStateOf(Destination.METRICS.ordinal)
     }
-    val selectedAccountId by vm.selectedAccountId.collectAsState()
-    if (selectedAccountId == null) {
-        login()
-    } else {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = { TopBar() },
-            bottomBar = {
-                FormaBottomBar(
-                    selectedDestination = selectedDestination,
-                    onDestinationSelected = { index, destination ->
-                        selectedDestination = index
-                        navController.navigate(destination.route) {
-                            launchSingleTop = true
-                            restoreState = true
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = { TopBar() },
+        bottomBar = {
+            FormaBottomBar(
+                selectedDestination = selectedDestination,
+                onDestinationSelected = { index, destination ->
+                    selectedDestination = index
+                    navController.navigate(destination.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
                         }
                     }
-                )
+                }
+            )
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Destination.METRICS.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Destination.METRICS.route) {
+                MetricsScreen()
             }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Destination.METRICS.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Destination.METRICS.route) {
-                    MetricsScreen()
-                }
-                composable(Destination.WORKOUTS.route) {
-                    DestinationText(text = "Workouts")
-                }
-                composable(Destination.RECORD.route) {
-                    RecordScreen()
-                }
-                composable(Destination.VITALS.route) {
-                    DestinationText(text = "Vitals")
-                }
+            composable(Destination.WORKOUTS.route) {
+                DestinationText(text = "Workouts")
+            }
+            composable(Destination.RECORD.route) {
+                RecordScreen()
+            }
+            composable(Destination.VITALS.route) {
+                DestinationText(text = "Vitals")
             }
         }
     }

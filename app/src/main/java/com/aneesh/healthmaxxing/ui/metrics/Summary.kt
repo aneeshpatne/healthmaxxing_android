@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -137,7 +136,7 @@ fun Summary(
 }
 
 @Composable
-private fun CustomizedCard(
+fun CustomizedCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -258,32 +257,6 @@ private fun BodyOverviewCard(
     }
 }
 
-@Composable
-private fun Stats() {
-    Column() {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            maxItemsInEachRow = 2,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            CustomizedCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp)
-            ) { Text("Card1") }
-            CustomizedCard(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(180.dp)
-            ) { Text("Card1") }
-            CustomizedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            ) { Text("Card1") }
-        }
-    }
-}
 
 @Composable
 private fun SummaryHeader() {
