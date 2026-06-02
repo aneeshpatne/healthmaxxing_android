@@ -37,7 +37,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,8 +58,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -70,7 +75,6 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -85,16 +89,60 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 
-private val TextPrimary = Color(0xFF0F172A)
-private val TextSecondary = Color(0xFF64748B)
+private val TextPrimary = Color(0xFF172A35)
+private val TextSecondary = Color(0xFF6B7A86)
 private val BorderSoft = Color(0xFFE6EEF2)
 private val SurfaceSoft = Color(0xFFF8FAFC)
-private val Blue = Color(0xFF2563EB)
-private val Purple = Color(0xFF7C3AED)
-private val Cyan = Color(0xFF06B6D4)
-private val Green = Color(0xFF22C55E)
+private val Blue = Color(0xFF4354B8)
+private val Purple = Color(0xFF6E5BB8)
+private val Cyan = Color(0xFF087E8B)
+private val Green = Color(0xFF34A77B)
 private val Orange = Color(0xFFF59E0B)
-private val Success = Color(0xFF16A34A)
+private val Success = Green
+
+private object YoungerBodyAgeColors {
+    val Background = Color.White.copy(alpha = 0.92f)
+    val PanelBackground = SurfaceSoft.copy(alpha = 0.42f)
+    val PrimaryText = TextPrimary
+    val AccentText = Green
+    val BodyAgeGreen = Green
+    val BodyAgeGreenLight = Cyan
+    val PaleGreenCircle = Green.copy(alpha = 0.10f)
+    val BadgeBackground = Green.copy(alpha = 0.10f)
+    val CardBorder = BorderSoft
+    val ActualAgeGray = TextSecondary
+    val SecondaryText = TextSecondary
+    val TrackGray = BorderSoft
+    val TickGray = BorderSoft
+    val MarkerGray = TextSecondary.copy(alpha = 0.72f)
+}
+
+data class BodyAgeComparisonUiModel(
+    val bodyAge: Int = 28,
+    val actualAge: Int = 34,
+    val minAge: Int = 20,
+    val maxAge: Int = 40,
+    val statusText: String = "Great work!",
+    val headline: String = "Your body is younger\nthan your actual age."
+) {
+    val ageDifference: Int
+        get() = actualAge - bodyAge
+
+    val bodyAgeProgress: Float
+        get() = ((bodyAge - minAge).toFloat() / (maxAge - minAge))
+            .coerceIn(0f, 1f)
+
+    val actualAgeProgress: Float
+        get() = ((actualAge - minAge).toFloat() / (maxAge - minAge))
+            .coerceIn(0f, 1f)
+
+    val resultBadgeText: String
+        get() = when {
+            ageDifference > 0 -> "$ageDifference years younger"
+            ageDifference == 0 -> "Age matched"
+            else -> "${-ageDifference} years higher"
+        }
+}
 
 private val BodyFatTopPadding = 36.dp
 private val MuscleMassBottomPadding = 80.dp
@@ -125,7 +173,10 @@ fun Summary(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         SummaryHeader()
-        BodyOverviewCard()
+        FormaScoreCard()
+
+        BodyAgeHealthScoreCard()
+
 
         BodyCompositionPanel()
         BodyMeasurementsPanel()
@@ -152,7 +203,7 @@ fun CustomizedCard(
 
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
-private fun BodyOverviewCard(
+fun BodyOverviewCard(
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -192,10 +243,9 @@ private fun BodyOverviewCard(
                 Text(
                     text = "You’re making excellent progress.",
                     color = TextPrimary,
-                    fontSize = 20.sp,
-                    lineHeight = 24.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily.Serif,
+                    fontSize = 19.sp,
+                    lineHeight = 23.sp,
+                    fontWeight = FontWeight.SemiBold,
                     style = compactTextStyle()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -250,6 +300,506 @@ private fun BodyOverviewCard(
                         .padding(end = 0.dp)
                         .requiredSize(150.dp),
                     contentScale = ContentScale.Fit
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun BodyAgeHealthScoreCard(
+    modifier: Modifier = Modifier,
+    model: BodyAgeComparisonUiModel = BodyAgeComparisonUiModel()
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = YoungerBodyAgeColors.Background
+        ),
+        border = BorderStroke(1.dp, YoungerBodyAgeColors.CardBorder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(YoungerBodyAgeColors.Background)
+                .padding(16.dp)
+        ) {
+            BodyAgeDottedTexture(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .size(width = 132.dp, height = 110.dp)
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(YoungerBodyAgeColors.PaleGreenCircle),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = YoungerBodyAgeColors.BodyAgeGreen,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = model.statusText,
+                        color = YoungerBodyAgeColors.AccentText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 17.sp,
+                        style = compactTextStyle()
+                    )
+                }
+
+                Text(
+                    text = model.headline,
+                    color = YoungerBodyAgeColors.PrimaryText,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = compactTextStyle(),
+                    modifier = Modifier.padding(end = 96.dp)
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = YoungerBodyAgeColors.PanelBackground,
+                    border = BorderStroke(1.dp, YoungerBodyAgeColors.CardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        BodyAgeMetricsRow(model)
+                        AgeComparisonScale(model)
+                        ResultBadge(
+                            text = model.resultBadgeText,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BodyAgeDottedTexture(
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val dotColor = Blue.copy(alpha = 0.12f)
+        val dotRadius = 1.dp.toPx()
+        val spacing = 7.dp.toPx()
+
+        val cols = (size.width / spacing).toInt() + 1
+        val rows = (size.height / spacing).toInt() + 1
+        for (i in 0 until cols) {
+            for (j in 0 until rows) {
+                val fadeX = 1f - (i.toFloat() / cols.toFloat())
+                val fadeY = 1f - (j.toFloat() / rows.toFloat()) * 0.35f
+                drawCircle(
+                    color = dotColor.copy(alpha = dotColor.alpha * fadeX * fadeY),
+                    radius = dotRadius,
+                    center = Offset(i * spacing, j * spacing)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BodyAgeMetricsRow(
+    model: BodyAgeComparisonUiModel,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        AgeMetricColumn(
+            label = "Body Age",
+            age = model.bodyAge,
+            color = YoungerBodyAgeColors.BodyAgeGreen,
+            horizontalAlignment = Alignment.Start
+        )
+        AgeMetricColumn(
+            label = "Actual Age",
+            age = model.actualAge,
+            color = YoungerBodyAgeColors.ActualAgeGray,
+            horizontalAlignment = Alignment.End
+        )
+    }
+}
+
+@Composable
+private fun AgeMetricColumn(
+    label: String,
+    age: Int,
+    color: Color,
+    horizontalAlignment: Alignment.Horizontal,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = label,
+            color = color,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 16.sp,
+            style = compactTextStyle()
+        )
+        Row(
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = age.toString(),
+                color = color,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 42.sp,
+                style = compactTextStyle(),
+                modifier = Modifier.alignByBaseline()
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "years",
+                color = color,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                style = compactTextStyle(),
+                modifier = Modifier
+                    .padding(bottom = 6.dp)
+                    .alignByBaseline()
+            )
+        }
+    }
+}
+
+@Composable
+private fun AgeComparisonScale(
+    model: BodyAgeComparisonUiModel,
+    modifier: Modifier = Modifier
+) {
+    val ticks = listOf(model.minAge, 25, 30, 35, model.maxAge)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(78.dp)
+        ) {
+            val markerSize = 30.dp
+            val bodyMarkerOffset = (maxWidth * model.bodyAgeProgress) - (markerSize / 2)
+            val actualOffset = maxWidth * model.actualAgeProgress
+
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val trackTop = 40.dp.toPx()
+                val trackHeight = 20.dp.toPx()
+                val cornerRadius = trackHeight / 2f
+                val fillWidth = size.width * 0.56f
+
+                drawRoundRect(
+                    color = YoungerBodyAgeColors.TrackGray,
+                    topLeft = Offset(0f, trackTop),
+                    size = Size(size.width, trackHeight),
+                    cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+                )
+                drawRoundRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            YoungerBodyAgeColors.BodyAgeGreen,
+                            YoungerBodyAgeColors.BodyAgeGreenLight
+                        ),
+                        startX = 0f,
+                        endX = fillWidth
+                    ),
+                    topLeft = Offset(0f, trackTop),
+                    size = Size(fillWidth, trackHeight),
+                    cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+                )
+
+                ticks.forEach { tick ->
+                    val progress = ((tick - model.minAge).toFloat() / (model.maxAge - model.minAge))
+                        .coerceIn(0f, 1f)
+                    val x = size.width * progress
+                    drawLine(
+                        color = YoungerBodyAgeColors.TickGray,
+                        start = Offset(x, trackTop + trackHeight + 3.dp.toPx()),
+                        end = Offset(x, trackTop + trackHeight + 11.dp.toPx()),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .offset(x = actualOffset)
+                    .width(1.dp)
+                    .height(27.dp)
+                    .align(Alignment.TopStart)
+                    .background(YoungerBodyAgeColors.MarkerGray)
+            )
+
+            Column(
+                modifier = Modifier
+                    .offset(x = bodyMarkerOffset)
+                    .align(Alignment.TopStart),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(markerSize)
+                        .clip(CircleShape)
+                        .background(YoungerBodyAgeColors.BodyAgeGreen),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(18.dp)
+                        .background(YoungerBodyAgeColors.BodyAgeGreen)
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            ticks.forEach { tick ->
+                Text(
+                    text = tick.toString(),
+                    color = YoungerBodyAgeColors.SecondaryText,
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp,
+                    style = compactTextStyle()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultBadge(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = YoungerBodyAgeColors.BadgeBackground,
+        shape = RoundedCornerShape(999.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = YoungerBodyAgeColors.BodyAgeGreen,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = text,
+                color = YoungerBodyAgeColors.PrimaryText,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+                style = compactTextStyle()
+            )
+        }
+    }
+}
+
+private object FormaScoreColors {
+    val Background = Color.White.copy(alpha = 0.92f)
+    val DeepGreen = TextPrimary
+    val GaugeGreenStart = Green
+    val GaugeGreenEnd = Cyan
+    val Track = BorderSoft
+    val StatusGreen = Success
+    val PrimaryText = TextPrimary
+    val SecondaryText = TextSecondary
+}
+
+@Composable
+fun FormaScoreCard(
+    modifier: Modifier = Modifier,
+    score: Int = 86,
+    maxScore: Int = 100,
+    status: String = "Good",
+    supportingText: String = "Better than 86% of\npeople your age"
+) {
+    val progress = (score.toFloat() / maxScore.toFloat()).coerceIn(0f, 1f)
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = FormaScoreColors.Background
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, BorderSoft)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Your Forma Score",
+                fontSize = 22.sp,
+                color = FormaScoreColors.DeepGreen,
+                fontWeight = FontWeight.SemiBold,
+                style = compactTextStyle()
+            )
+
+            Text(
+                text = "Today’s snapshot of your body-health\nand readiness.",
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                color = FormaScoreColors.SecondaryText,
+                style = compactTextStyle()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(240.dp)
+                    .align(Alignment.CenterHorizontally),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeWidth = 11.dp.toPx()
+                    val inset = strokeWidth / 2f
+                    val diameter = size.width - strokeWidth
+                    val topLeft = Offset(inset, inset)
+                    val arcSize = Size(diameter, diameter)
+                    val startAngle = 150f
+                    val totalSweep = 240f
+
+                    drawArc(
+                        color = FormaScoreColors.Track,
+                        startAngle = startAngle,
+                        sweepAngle = totalSweep,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+
+                    drawArc(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                FormaScoreColors.GaugeGreenStart,
+                                FormaScoreColors.GaugeGreenEnd
+                            ),
+                            start = Offset(0f, 0f),
+                            end = Offset(0f, size.height)
+                        ),
+                        startAngle = startAngle,
+                        sweepAngle = totalSweep * progress,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = score.toString(),
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = FormaScoreColors.DeepGreen,
+                        lineHeight = 72.sp,
+                        style = compactTextStyle()
+                    )
+                    Text(
+                        text = status,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = FormaScoreColors.StatusGreen,
+                        lineHeight = 24.sp,
+                        style = compactTextStyle()
+                    )
+                    Text(
+                        text = "Forma Score",
+                        fontSize = 14.sp,
+                        color = FormaScoreColors.PrimaryText,
+                        lineHeight = 18.sp,
+                        style = compactTextStyle()
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = supportingText,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        color = FormaScoreColors.SecondaryText,
+                        textAlign = TextAlign.Center,
+                        style = compactTextStyle()
+                    )
+                }
+
+                Text(
+                    text = "0",
+                    fontSize = 11.sp,
+                    color = FormaScoreColors.SecondaryText,
+                    style = compactTextStyle(),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = 30.dp, y = 188.dp)
+                )
+
+                Text(
+                    text = maxScore.toString(),
+                    fontSize = 11.sp,
+                    color = FormaScoreColors.SecondaryText,
+                    style = compactTextStyle(),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-38).dp, y = 188.dp)
                 )
             }
         }
