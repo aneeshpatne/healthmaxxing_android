@@ -388,11 +388,13 @@ fun CustomizedCardClickable(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val shape = RoundedCornerShape(18.dp)
+
     Card(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(shape)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = CardBackground
         ),
@@ -423,34 +425,50 @@ private fun MetricStatsCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 17.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 13.dp, vertical = 15.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = label.uppercase(),
-                    color = Blue,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.1.sp,
-                    style = compactTextStyle()
-                )
-                if (showInfoIcon) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Info",
-                        tint = TextSecondary.copy(alpha = 0.7f),
-                        modifier = Modifier.size(14.dp)
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 13.sp,
+                        style = compactTextStyle()
                     )
+                }
+
+                if (showInfoIcon) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 6.dp)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(TrackBackground),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "Info",
+                            tint = TextSecondary.copy(alpha = 0.68f),
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
                 }
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
             Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom
@@ -458,32 +476,40 @@ private fun MetricStatsCard(
                     Text(
                         text = valueText,
                         color = TextPrimary,
-                        fontSize = 25.sp,
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.SemiBold,
+                        lineHeight = 32.sp,
                         style = compactTextStyle(),
                         modifier = Modifier.alignByBaseline()
                     )
                     if (unit.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(3.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = unit,
                             color = TextSecondary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
                             style = compactTextStyle(),
                             modifier = Modifier.alignByBaseline()
                         )
                     }
                 }
 
-                Text(
-                    text = caption,
-                    color = captionColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Normal,
-                    style = compactTextStyle(),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(captionColor.copy(alpha = 0.1f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = caption,
+                        color = captionColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = compactTextStyle()
+                    )
+                }
             }
         }
     }
@@ -514,7 +540,7 @@ private fun Stats() {
     )
 
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
@@ -583,15 +609,16 @@ private fun Stats() {
 
 @Composable
 fun Fat() {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         FatRatioCard()
+        Stats()
     }
-    Stats()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
