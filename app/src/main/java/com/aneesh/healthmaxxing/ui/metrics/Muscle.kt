@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -39,9 +40,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -101,6 +104,299 @@ fun Muscle() {
     ) {
         MuscleSnapshotCard()
         MuscleVsRestOfBodyCard()
+        MuscleStats()
+    }
+}
+
+@Composable
+private fun MuscleStats() {
+    var activeSheet by rememberSaveable {
+        mutableStateOf<MuscleSheetType?>(null)
+    }
+
+    MuscleMetricBottomSheet(
+        activeSheet = activeSheet,
+        onDismissRequest = { activeSheet = null }
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MuscleMetricStatsCard(
+                label = "Bone Mass",
+                valueText = "2.8",
+                unit = "kg",
+                caption = "Healthy range",
+                onClick = { activeSheet = MuscleSheetType.BONE_MASS },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
+
+            MuscleMetricStatsCard(
+                label = "Muscle Ratio",
+                valueText = "57.3",
+                unit = "%",
+                caption = "Strong range",
+                onClick = { activeSheet = MuscleSheetType.MUSCLE_RATIO },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MuscleMetricStatsCard(
+                label = "Skeleton Muscle Mass",
+                valueText = "24.8",
+                unit = "kg",
+                caption = "Healthy range",
+                onClick = { activeSheet = MuscleSheetType.SKELETON_MUSCLE_MASS },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
+
+            MuscleMetricStatsCard(
+                label = "Skeleton Muscle Ratio",
+                valueText = "33.6",
+                unit = "%",
+                caption = "Normal range",
+                onClick = { activeSheet = MuscleSheetType.SKELETON_MUSCLE_RATIO },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(150.dp)
+            )
+        }
+    }
+}
+
+private enum class MuscleSheetType {
+    BONE_MASS,
+    MUSCLE_RATIO,
+    SKELETON_MUSCLE_MASS,
+    SKELETON_MUSCLE_RATIO
+}
+
+@Composable
+private fun MuscleMetricStatsCard(
+    label: String,
+    valueText: String,
+    unit: String,
+    caption: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MuscleSnapshotColors.Background
+        ),
+        border = BorderStroke(1.dp, MuscleCardBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 13.dp, vertical = 15.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    color = MuscleSnapshotColors.SecondaryText,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 13.sp,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                    modifier = Modifier.weight(1f)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF8FAFC)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Info",
+                        tint = MuscleSnapshotColors.SecondaryText.copy(alpha = 0.68f),
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = valueText,
+                        color = MuscleSnapshotColors.PrimaryText,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 32.sp,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                        modifier = Modifier.alignByBaseline()
+                    )
+                    if (unit.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = unit,
+                            color = MuscleSnapshotColors.SecondaryText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                            modifier = Modifier.alignByBaseline()
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(MuscleSnapshotColors.SuccessGreen.copy(alpha = 0.1f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = caption,
+                        color = MuscleSnapshotColors.SuccessGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MuscleMetricBottomSheet(
+    activeSheet: MuscleSheetType?,
+    onDismissRequest: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = false,
+        confirmValueChange = { true }
+    )
+
+    if (activeSheet != null) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissRequest,
+            sheetState = sheetState,
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = {
+                BottomSheetDefaults.DragHandle(
+                    color = MuscleCardBorder
+                )
+            }
+        ) {
+            val title: String
+            val headerText: String
+            val explanation: String
+
+            when (activeSheet) {
+                MuscleSheetType.BONE_MASS -> {
+                    title = "BONE MASS INFO"
+                    headerText = "Understanding Bone Mass"
+                    explanation = "Bone mass estimates the weight of mineral content in your bones.\n\nIt is a useful body-composition marker because stronger bones support posture, training capacity, and long-term mobility. Changes are usually gradual, so trends matter more than single readings."
+                }
+                MuscleSheetType.MUSCLE_RATIO -> {
+                    title = "MUSCLE RATIO INFO"
+                    headerText = "Understanding Muscle Ratio"
+                    explanation = "Muscle ratio is the percentage of your total body weight represented by muscle mass.\n\nA higher healthy muscle ratio usually reflects better strength potential, metabolic health, and body composition, especially when tracked alongside body weight and fat ratio."
+                }
+                MuscleSheetType.SKELETON_MUSCLE_MASS -> {
+                    title = "SKELETON MUSCLE MASS"
+                    headerText = "Understanding Skeletal Muscle Mass"
+                    explanation = "Skeletal muscle mass is the muscle attached to your bones that helps you move, lift, stabilize joints, and maintain posture.\n\nThis metric is especially useful for strength and fitness tracking because it focuses on the muscles most directly affected by resistance training."
+                }
+                MuscleSheetType.SKELETON_MUSCLE_RATIO -> {
+                    title = "SKELETON MUSCLE RATIO"
+                    headerText = "Understanding Skeletal Muscle Ratio"
+                    explanation = "Skeletal muscle ratio shows skeletal muscle mass as a percentage of total body weight.\n\nIt helps compare muscular development independent of body size, and is best interpreted together with total muscle mass, fat ratio, and recent training trends."
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = title,
+                    color = MuscleSnapshotColors.AccentBlue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = headerText,
+                    color = MuscleSnapshotColors.PrimaryText,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false)),
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = Color(0xFFF8FAFC),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = MuscleCardBorder,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = explanation,
+                        color = MuscleSnapshotColors.SecondaryText,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
     }
 }
 
