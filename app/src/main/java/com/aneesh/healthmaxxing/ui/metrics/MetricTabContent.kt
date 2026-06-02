@@ -31,37 +31,44 @@ fun MetricTabContent(
         when (selectedTab) {
             0 -> {
                 // Summary Page (existing content)
-                Summary()
+                AI()
             }
 
             1 -> {
-                Fat()
+                Summary()
             }
 
             2 -> {
-                Muscle()
+                Fat()
             }
 
             3 -> {
-                MetricDetailPlaceholder(
-                    title = "Lean Mass",
-                    description = "Evaluate lean body mass changes to ensure healthy weight progression and fitness efficiency."
-                )
+                Muscle()
             }
 
             4 -> {
                 MetricDetailPlaceholder(
-                    title = "Protein Status",
+                    title = "Lean Mass Status",
                     description = "View your protein levels to ensure proper nutrition, muscle repair, and recovery support."
                 )
             }
 
             5 -> {
                 MetricDetailPlaceholder(
+                    title = "Protein Level",
+                    description = "Keep track of total body water percentage to maintain peak cellular performance and energy."
+                )
+
+            }
+
+            6 -> {
+                MetricDetailPlaceholder(
                     title = "Hydration Level",
                     description = "Keep track of total body water percentage to maintain peak cellular performance and energy."
                 )
+
             }
+
         }
     }
 }
