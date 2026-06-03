@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -30,6 +31,8 @@ import com.aneesh.healthmaxxing.R
 @Composable
 fun TopBar() {
     val primaryAccent = MaterialTheme.colorScheme.primary
+    val brandFont = FontFamily(Font(R.font.cormorant_garamond_variablefont_wght))
+    val manropeFont = FontFamily(Font(R.font.manrope_variablefont_wght))
 
     Surface(
         modifier = Modifier
@@ -51,14 +54,36 @@ fun TopBar() {
                 ) {
 
 
-                    Text(
-                        text = "Forma",
-                        fontSize = 35.sp,
-                        fontFamily = FontFamily(Font(R.font.cormorant_garamond_variablefont_wght)),
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.sp,
-
+                    Column {
+                        Text(
+                            text = "Forma",
+                            fontSize = 35.sp,
+                            fontFamily = brandFont,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.sp,
+                            lineHeight = 35.sp
                         )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Good morning, Aneesh",
+                                fontSize = 14.sp,
+                                fontFamily = manropeFont,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.58f),
+                                letterSpacing = 0.1.sp,
+                                lineHeight = 18.sp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.WbSunny,
+                                contentDescription = null,
+                                tint = primaryAccent.copy(alpha = 0.72f),
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
 
                 }
 
