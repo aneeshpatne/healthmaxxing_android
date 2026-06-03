@@ -18,7 +18,8 @@ fun MetricTabs(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit
 ) {
-    val tabs = listOf("AI", "Essentials", "Fat", "Muscle", "Lean Mass", "Protein", "Hydration")
+    val tabs =
+        listOf("Insights", "Essentials", "Fat", "Muscle", "Lean Mass", "Protein", "Hydration")
     val selectedIndex = selectedTab.coerceIn(tabs.indices)
     val accent = Color(0xFF6D5DF6)
     val neutralText = Color(0xFF6B7280)
