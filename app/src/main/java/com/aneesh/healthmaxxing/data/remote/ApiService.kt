@@ -29,4 +29,7 @@ interface ApiService {
         @Query("period") period: String,
         @Query("profileId") profileId: String? = null
     ): Response<BodyCompositionTrendResponse>
+
+    @GET("client/profiles/{profileId}/essentials")
+    suspend fun getEssentials(@Path("profileId") profileId: String): Response<ProfileEssentialsResponse>
 }
