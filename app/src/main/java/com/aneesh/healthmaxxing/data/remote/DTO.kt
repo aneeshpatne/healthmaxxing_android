@@ -104,3 +104,56 @@ data class TrendPoint(
     @SerializedName("createdAt") val createdAt: String,
     @SerializedName("value") val value: Double
 )
+
+data class ProfileEssentialsResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("essentials") val essentials: Essentials
+)
+
+data class Essentials(
+    @SerializedName("formaScore") val formaScore: FormaScore,
+    @SerializedName("bodyAge") val bodyAge: Int,
+    @SerializedName("realAge") val realAge: Int,
+    @SerializedName("compositionSummary") val compositionSummary: CompositionSummary,
+    @SerializedName("measurements") val measurements: Measurements,
+    @SerializedName("currentWeight") val currentWeight: Double,
+    @SerializedName("goalWeight") val goalWeight: Double,
+    @SerializedName("averageWeight30d") val averageWeight30d: Double,
+    @SerializedName("lowestWeight30d") val lowestWeight30d: Double,
+    @SerializedName("last30DaysWeightTrend") val last30DaysWeightTrend: List<WeightTrend>
+)
+
+data class FormaScore(
+    @SerializedName("score") val score: Int,
+    @SerializedName("remark") val remark: String
+)
+
+data class CompositionSummary(
+    @SerializedName("body_fat_pct") val bodyFatPct: Double,
+    @SerializedName("lean_mass_pct") val leanMassPct: Double,
+    @SerializedName("protein_pct") val proteinPct: Double,
+    @SerializedName("hydration_pct") val hydrationPct: Double,
+    @SerializedName("muscle_mass_pct") val muscleMassPct: Double,
+    @SerializedName("composition_score") val compositionScore: Int
+)
+
+data class Measurements(
+    @SerializedName("id") val id: String,
+    @SerializedName("neckCm") val neckCm: Double,
+    @SerializedName("shoulderCm") val shoulderCm: Double,
+    @SerializedName("chestCm") val chestCm: Double,
+    @SerializedName("stomachCm") val stomachCm: Double,
+    @SerializedName("waistCm") val waistCm: Double,
+    @SerializedName("calfCm") val calfCm: Double,
+    @SerializedName("thighCm") val thighCm: Double,
+    @SerializedName("bicepCm") val bicepCm: Double,
+    @SerializedName("forearmCm") val forearmCm: Double,
+    @SerializedName("createdAt") val createdAt: String
+)
+
+data class WeightTrend(
+    @SerializedName("weight") val weight: Double,
+    @SerializedName("createdAt") val createdAt: String
+)
+
