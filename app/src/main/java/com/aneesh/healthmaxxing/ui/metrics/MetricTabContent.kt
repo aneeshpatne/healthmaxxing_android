@@ -19,9 +19,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.aneesh.healthmaxxing.data.remote.InsightsResponse
+
 @Composable
 fun MetricTabContent(
     selectedTab: Int,
+    insightsResponse: InsightsResponse?,
+    isLoading: Boolean,
+    error: String?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -31,7 +36,28 @@ fun MetricTabContent(
         when (selectedTab) {
             0 -> {
                 // Summary Page (existing content)
-                AI()
+                if (isLoading && insightsResponse == null) {
+                    AiShimmerPlaceholder()
+                } else if (error != null && insightsResponse == null) {
+                    Text(
+                        text = error,
+                        color = Color.Red,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        textAlign = TextAlign.Center
+                    )
+                } else if (insightsResponse != null) {
+                    AI(insightsResponse = insightsResponse)
+                } else {
+                    Text(
+                        text = "No insights available.",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             1 -> {
