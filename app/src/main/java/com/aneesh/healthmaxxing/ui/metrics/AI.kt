@@ -29,7 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -67,6 +70,7 @@ fun AI() {
         MomentumInsightCard()
         BiggestLeverInsightCard()
         PhysiqueArchetypeCard()
+        EffortScoreCard()
     }
 }
 
@@ -189,10 +193,187 @@ fun PhysiqueArchetypeCard(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.physique),
+                painter = painterResource(id = R.drawable.physique2),
                 contentDescription = "Broad Strong Frame physique archetype",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
+            )
+        }
+    }
+}
+
+@Composable
+fun EffortScoreCard(
+    modifier: Modifier = Modifier
+) {
+    AiInsightCard(
+        modifier = modifier,
+        label = "EFFORT SCORE",
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Tune,
+                contentDescription = null,
+                tint = AiGreen,
+                modifier = Modifier.size(14.dp)
+            )
+        },
+        headline = buildAnnotatedString {},
+        supportingText = "",
+        footerText = ""
+    ) {
+        EffortGauge(
+            value = 82f,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+
+        HorizontalDivider(
+            color = AiCardBorder,
+            thickness = 1.dp,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
+
+        Text(
+            text = "Your training volume and intensity are well-balanced. You've hit your target workouts with high quality, and heart rate variability indicates strong stress adaptation. Continuing at this level will maximize muscle gains without leading to fatigue.",
+            color = AiTextSecondary,
+            fontSize = 12.sp,
+            lineHeight = 17.sp,
+            fontWeight = FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+fun EffortGauge(
+    value: Float,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Canvas(
+            modifier = Modifier
+                .weight(1f)
+                .height(34.dp)
+        ) {
+            val trackHeight = 14.dp.toPx()
+            val trackY = size.height / 2f
+            val thumbRadius = 10.dp.toPx()
+            val startX = thumbRadius + 2.dp.toPx()
+            val endX = size.width - thumbRadius - 2.dp.toPx()
+            val trackWidth = endX - startX
+            val progressX = startX + (value / 100f) * trackWidth
+
+            // Track shadow (subtle depth)
+            drawRoundRect(
+                color = Color(0x14000000),
+                topLeft = Offset(startX, trackY - trackHeight / 2f + 1.5.dp.toPx()),
+                size = Size(trackWidth, trackHeight),
+                cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+            )
+
+            // Track background
+            drawRoundRect(
+                color = Color(0xFFE4E9EE),
+                topLeft = Offset(startX, trackY - trackHeight / 2f),
+                size = Size(trackWidth, trackHeight),
+                cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+            )
+
+            // Progress fill — 5-stop gradient for a rich spectrum
+            val progressBrush = Brush.horizontalGradient(
+                colorStops = arrayOf(
+                    0.00f to Color(0xFFE53935),
+                    0.25f to Color(0xFFFF7043),
+                    0.50f to Color(0xFFFFA726),
+                    0.75f to Color(0xFF66BB6A),
+                    1.00f to Color(0xFF2E9E6E)
+                ),
+                startX = startX,
+                endX = endX
+            )
+            if (progressX > startX) {
+                drawRoundRect(
+                    brush = progressBrush,
+                    topLeft = Offset(startX, trackY - trackHeight / 2f),
+                    size = Size(progressX - startX, trackHeight),
+                    cornerRadius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+                )
+            }
+
+            // Glass highlight — thin bright strip across the top of the bar
+            val highlightHeight = 4.dp.toPx()
+            val highlightBrush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.45f),
+                    Color.White.copy(alpha = 0f)
+                ),
+                startY = trackY - trackHeight / 2f,
+                endY = trackY - trackHeight / 2f + highlightHeight
+            )
+            drawRoundRect(
+                brush = highlightBrush,
+                topLeft = Offset(startX, trackY - trackHeight / 2f),
+                size = Size(
+                    if (progressX > startX) progressX - startX else trackWidth,
+                    highlightHeight
+                ),
+                cornerRadius = CornerRadius(highlightHeight / 2f, highlightHeight / 2f)
+            )
+
+            // Thumb — soft shadow
+            drawCircle(
+                color = Color(0x20000000),
+                radius = thumbRadius + 2.dp.toPx(),
+                center = Offset(progressX + 0.5.dp.toPx(), trackY + 1.dp.toPx())
+            )
+            // Thumb — outer glow
+            drawCircle(
+                color = Color(0xFF2E9E6E).copy(alpha = 0.22f),
+                radius = thumbRadius + 3.dp.toPx(),
+                center = Offset(progressX, trackY)
+            )
+            // Thumb — main fill with gradient
+            val thumbBrush = Brush.radialGradient(
+                colors = listOf(Color(0xFF3AB885), Color(0xFF2E9E6E)),
+                center = Offset(progressX, trackY),
+                radius = thumbRadius
+            )
+            drawCircle(
+                brush = thumbBrush,
+                radius = thumbRadius,
+                center = Offset(progressX, trackY)
+            )
+            // Thumb — inner ring
+            drawCircle(
+                color = Color.White.copy(alpha = 0.25f),
+                radius = thumbRadius - 1.5.dp.toPx(),
+                center = Offset(progressX, trackY),
+                style = Stroke(width = 1.dp.toPx())
+            )
+            // Thumb — white center dot
+            drawCircle(
+                color = Color.White,
+                radius = 3.5.dp.toPx(),
+                center = Offset(progressX, trackY)
+            )
+        }
+
+        // Score pill badge
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(AiGreen.copy(alpha = 0.10f))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "${value.toInt()}",
+                color = AiGreen,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                style = compactAiTextStyle()
             )
         }
     }
@@ -248,39 +429,45 @@ private fun AiInsightCard(
                 )
             }
 
-            Text(
-                text = headline,
-                color = AiTextPrimary,
-                fontSize = 20.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-                style = compactAiTextStyle()
-            )
+            if (headline.isNotEmpty()) {
+                Text(
+                    text = headline,
+                    color = AiTextPrimary,
+                    fontSize = 20.sp,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = compactAiTextStyle()
+                )
+            }
 
-            Text(
-                text = supportingText,
-                color = AiTextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-                fontWeight = FontWeight.Normal,
-                style = compactAiTextStyle()
-            )
+            if (supportingText.isNotEmpty()) {
+                Text(
+                    text = supportingText,
+                    color = AiTextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.Normal,
+                    style = compactAiTextStyle()
+                )
+            }
 
             extraContent()
 
-            HorizontalDivider(
-                color = AiCardBorder,
-                thickness = 1.dp
-            )
+            if (footerText.isNotEmpty()) {
+                HorizontalDivider(
+                    color = AiCardBorder,
+                    thickness = 1.dp
+                )
 
-            Text(
-                text = footerText,
-                color = AiTextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 15.sp,
-                fontWeight = FontWeight.Normal,
-                style = compactAiTextStyle()
-            )
+                Text(
+                    text = footerText,
+                    color = AiTextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Normal,
+                    style = compactAiTextStyle()
+                )
+            }
         }
     }
 }
