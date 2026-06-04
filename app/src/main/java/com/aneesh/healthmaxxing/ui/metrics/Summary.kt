@@ -204,6 +204,8 @@ fun CustomizedCard(
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 fun BodyOverviewCard(
+    title: String,
+    remarks: String,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -241,7 +243,7 @@ fun BodyOverviewCard(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "You’re making excellent progress.",
+                    text = title,
                     color = TextPrimary,
                     fontSize = 19.sp,
                     lineHeight = 23.sp,
@@ -250,7 +252,7 @@ fun BodyOverviewCard(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Your body composition has improved significantly over the past 8 weeks.",
+                    text = remarks,
                     color = TextSecondary,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,

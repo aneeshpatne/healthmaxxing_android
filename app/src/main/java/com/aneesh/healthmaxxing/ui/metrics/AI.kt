@@ -25,8 +25,21 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.composed
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
@@ -43,14 +56,15 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.R
+import com.aneesh.healthmaxxing.data.remote.EffortScore
+import com.aneesh.healthmaxxing.data.remote.InsightSection
+import com.aneesh.healthmaxxing.data.remote.InsightsResponse
 
 private val AiTextPrimary = Color(0xFF172A35)
 private val AiTextSecondary = Color(0xFF6B7A86)
@@ -60,22 +74,31 @@ private val AiGreen = Color(0xFF34A77B)
 private val AiSurfaceSoft = Color(0xFFF8FAFC)
 
 @Composable
-fun AI() {
+fun AI(
+    insightsResponse: InsightsResponse
+) {
+    val insights = insightsResponse.insights
+    val effortScore = insightsResponse.effortScore
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        BodyOverviewCard()
-        HeroInsightCard()
-        MomentumInsightCard()
-        BiggestLeverInsightCard()
-        PhysiqueArchetypeCard()
-        EffortScoreCard()
+        BodyOverviewCard(
+            title = insights.overviewTitle,
+            remarks = insights.overviewRemarks
+        )
+        HeroInsightCard(insightSection = insights.foundation)
+        MomentumInsightCard(insightSection = insights.momentum)
+        BiggestLeverInsightCard(insightSection = insights.biggestLever)
+        PhysiqueArchetypeCard(archetype = insights.physiqueArchetype)
+        EffortScoreCard(effortScore = effortScore)
     }
 }
 
 @Composable
 fun HeroInsightCard(
+    insightSection: InsightSection,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -89,20 +112,15 @@ fun HeroInsightCard(
                 modifier = Modifier.size(14.dp)
             )
         },
-        headline = buildAnnotatedString {
-            append("You've built ")
-            withStyle(style = SpanStyle(color = AiGreen)) {
-                append("55kg")
-            }
-            append(" of quality muscle.")
-        },
-        supportingText = "A sturdy base for body recomposition, recovery, and better training output.",
-        footerText = "Consistency is paying off. Keep protein intake steady and progress load gradually."
+        headline = buildAnnotatedString { append(insightSection.headline) },
+        supportingText = insightSection.supportingDescription,
+        footerText = insightSection.actionableInsight
     )
 }
 
 @Composable
 fun MomentumInsightCard(
+    insightSection: InsightSection,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -116,15 +134,9 @@ fun MomentumInsightCard(
                 modifier = Modifier.size(14.dp)
             )
         },
-        headline = buildAnnotatedString {
-            append("Body fat is edging down while ")
-            withStyle(style = SpanStyle(color = AiGreen)) {
-                append("muscle trends up")
-            }
-            append(".")
-        },
-        supportingText = "A quiet but steady recomposition pattern is forming across your recent check-ins.",
-        footerText = "Keep the current rhythm: consistent training, steady protein, and measured calorie control."
+        headline = buildAnnotatedString { append(insightSection.headline) },
+        supportingText = insightSection.supportingDescription,
+        footerText = insightSection.actionableInsight
     ) {
         MomentumTrendGraph()
     }
@@ -132,6 +144,7 @@ fun MomentumInsightCard(
 
 @Composable
 fun BiggestLeverInsightCard(
+    insightSection: InsightSection,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -145,20 +158,15 @@ fun BiggestLeverInsightCard(
                 modifier = Modifier.size(14.dp)
             )
         },
-        headline = buildAnnotatedString {
-            append("Dial in a ")
-            withStyle(style = SpanStyle(color = AiGreen)) {
-                append("slight calorie deficit")
-            }
-            append(" with higher protein.")
-        },
-        supportingText = "That combination will trim the waistline and reveal your shape without compromising the muscle base you've built.",
-        footerText = "Aim for small, repeatable adjustments rather than aggressive cuts."
+        headline = buildAnnotatedString { append(insightSection.headline) },
+        supportingText = insightSection.supportingDescription,
+        footerText = insightSection.actionableInsight
     )
 }
 
 @Composable
 fun PhysiqueArchetypeCard(
+    archetype: String,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -172,13 +180,7 @@ fun PhysiqueArchetypeCard(
                 modifier = Modifier.size(14.dp)
             )
         },
-        headline = buildAnnotatedString {
-            append("Broad ")
-            withStyle(style = SpanStyle(color = AiGreen)) {
-                append("Strong")
-            }
-            append(" Frame")
-        },
+        headline = buildAnnotatedString { append(archetype) },
         supportingText = "Your structure reads wide and solid, with the foundation to carry more definition as the waistline tightens.",
         footerText = "Keep building around shoulders, back, and upper chest while trimming gradually."
     ) {
@@ -194,7 +196,7 @@ fun PhysiqueArchetypeCard(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.physique2),
-                contentDescription = "Broad Strong Frame physique archetype",
+                contentDescription = "$archetype physique archetype",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )
@@ -204,6 +206,7 @@ fun PhysiqueArchetypeCard(
 
 @Composable
 fun EffortScoreCard(
+    effortScore: EffortScore,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -222,7 +225,7 @@ fun EffortScoreCard(
         footerText = ""
     ) {
         EffortGauge(
-            value = 82f,
+            value = effortScore.score.toFloat(),
             modifier = Modifier.padding(vertical = 4.dp)
         )
 
@@ -233,7 +236,7 @@ fun EffortScoreCard(
         )
 
         Text(
-            text = "Your training volume and intensity are well-balanced. You've hit your target workouts with high quality, and heart rate variability indicates strong stress adaptation. Continuing at this level will maximize muscle gains without leading to fatigue.",
+            text = effortScore.remark,
             color = AiTextSecondary,
             fontSize = 12.sp,
             lineHeight = 17.sp,
@@ -612,3 +615,111 @@ private fun GraphLegend(
 private fun compactAiTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
+
+@Composable
+fun AiShimmerPlaceholder() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        // BodyOverviewCard skeleton
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .shimmerEffect()
+        )
+        
+        // 3 Insight Card skeletons
+        repeat(3) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.92f)),
+                border = BorderStroke(1.dp, Color(0xFFE6EEF2))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header (Icon + Label)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .shimmerEffect()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(width = 80.dp, height = 12.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                    
+                    // Headline
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(20.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    
+                    // Supporting text
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun Modifier.shimmerEffect(): Modifier = composed {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val startOffsetX by transition.animateFloat(
+        initialValue = -2 * size.width.toFloat(),
+        targetValue = 2 * size.width.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer_offset"
+    )
+
+    background(
+        brush = Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFF3F6F8),
+                Color(0xFFE2E9ED),
+                Color(0xFFF3F6F8),
+            ),
+            start = Offset(startOffsetX, 0f),
+            end = Offset(startOffsetX + size.width.toFloat(), size.height.toFloat())
+        )
+    ).onGloballyPositioned {
+        size = it.size
+    }
+}
