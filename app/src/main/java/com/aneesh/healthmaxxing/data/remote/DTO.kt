@@ -55,3 +55,36 @@ data class AddMeasurementResponse(
     @SerializedName("ok") val ok: Boolean,
     @SerializedName("id") val id: String
 )
+
+data class InsightsResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("insights") val insights: Insights,
+    @SerializedName("effortScore") val effortScore: EffortScore
+)
+
+data class Insights(
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("overviewTitle") val overviewTitle: String,
+    @SerializedName("overviewRemarks") val overviewRemarks: String,
+    @SerializedName("foundation") val foundation: InsightSection,
+    @SerializedName("momentum") val momentum: InsightSection,
+    @SerializedName("biggestLever") val biggestLever: InsightSection,
+    @SerializedName("physiqueArchetype") val physiqueArchetype: String,
+    @SerializedName("modelName") val modelName: String,
+    @SerializedName("updatedAt") val updatedAt: String
+)
+
+data class InsightSection(
+    @SerializedName("headline") val headline: String,
+    @SerializedName("supporting_description") val supportingDescription: String,
+    @SerializedName("actionable_insight") val actionableInsight: String
+)
+
+data class EffortScore(
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("score") val score: Int,
+    @SerializedName("remark") val remark: String,
+    @SerializedName("modelName") val modelName: String,
+    @SerializedName("updatedAt") val updatedAt: String
+)

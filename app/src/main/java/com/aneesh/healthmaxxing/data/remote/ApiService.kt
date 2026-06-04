@@ -2,7 +2,9 @@ package com.aneesh.healthmaxxing.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface ApiService {
     @POST("client/register")
@@ -16,4 +18,7 @@ interface ApiService {
 
     @POST("ingest/add_measurement")
     suspend fun addMeasurement(@Body request: AddMeasurementRequest): Response<AddMeasurementResponse>
+
+    @GET("client/profiles/{profileId}/insights")
+    suspend fun getInsights(@Path("profileId") profileId: String): Response<InsightsResponse>
 }
