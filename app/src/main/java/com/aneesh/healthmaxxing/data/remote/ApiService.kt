@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     @POST("client/register")
@@ -21,4 +22,11 @@ interface ApiService {
 
     @GET("client/profiles/{profileId}/insights")
     suspend fun getInsights(@Path("profileId") profileId: String): Response<InsightsResponse>
+
+    @GET("client/body-composition/trends")
+    suspend fun getBodyCompositionTrends(
+        @Query("metric") metric: String,
+        @Query("period") period: String,
+        @Query("profileId") profileId: String? = null
+    ): Response<BodyCompositionTrendResponse>
 }
