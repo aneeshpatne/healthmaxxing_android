@@ -30,6 +30,8 @@ fun MetricsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val error by viewModel.error.collectAsState()
+    val momentumTrends by viewModel.momentumTrends.collectAsState()
+    val momentumTrendsLoading by viewModel.momentumTrendsLoading.collectAsState()
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -48,7 +50,9 @@ fun MetricsScreen(
                 selectedTab = selectedTab,
                 insightsResponse = insights,
                 isLoading = isLoading,
-                error = error
+                error = error,
+                momentumTrends = momentumTrends,
+                momentumTrendsLoading = momentumTrendsLoading
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
