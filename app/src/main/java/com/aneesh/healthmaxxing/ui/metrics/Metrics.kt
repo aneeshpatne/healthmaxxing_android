@@ -23,7 +23,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MetricsScreen(
-    viewModel: InsightsViewModel = hiltViewModel()
+    viewModel: InsightsViewModel = hiltViewModel(),
+    essentialsViewModel: EssentialsViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val insights by viewModel.insights.collectAsState()
@@ -33,9 +34,17 @@ fun MetricsScreen(
     val momentumTrends by viewModel.momentumTrends.collectAsState()
     val momentumTrendsLoading by viewModel.momentumTrendsLoading.collectAsState()
 
+    val essentials by essentialsViewModel.essentials.collectAsState()
+    val essentialsLoading by essentialsViewModel.isLoading.collectAsState()
+    val essentialsRefreshing by essentialsViewModel.isRefreshing.collectAsState()
+    val essentialsError by essentialsViewModel.error.collectAsState()
+
     PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = { viewModel.refresh(isUserInitiated = true) },
+        isRefreshing = isRefreshing || essentialsRefreshing,
+        onRefresh = { 
+            viewModel.refresh(isUserInitiated = true)
+            essentialsViewModel.refresh(isUserInitiated = true)
+        },
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
@@ -52,7 +61,10 @@ fun MetricsScreen(
                 isLoading = isLoading,
                 error = error,
                 momentumTrends = momentumTrends,
-                momentumTrendsLoading = momentumTrendsLoading
+                momentumTrendsLoading = momentumTrendsLoading,
+                essentialsResponse = essentials,
+                essentialsLoading = essentialsLoading,
+                essentialsError = essentialsError
             )
             Spacer(modifier = Modifier.height(4.dp))
         }

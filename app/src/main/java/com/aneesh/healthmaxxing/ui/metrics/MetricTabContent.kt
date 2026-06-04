@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.aneesh.healthmaxxing.data.remote.InsightsResponse
+import com.aneesh.healthmaxxing.data.remote.ProfileEssentialsResponse
 import com.aneesh.healthmaxxing.data.remote.TrendPoint
 
 @Composable
@@ -30,6 +31,9 @@ fun MetricTabContent(
     error: String?,
     momentumTrends: Map<String, List<TrendPoint>> = emptyMap(),
     momentumTrendsLoading: Boolean = false,
+    essentialsResponse: ProfileEssentialsResponse? = null,
+    essentialsLoading: Boolean = false,
+    essentialsError: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -68,7 +72,11 @@ fun MetricTabContent(
             }
 
             1 -> {
-                Summary()
+                Summary(
+                    essentialsResponse = essentialsResponse,
+                    isLoading = essentialsLoading,
+                    error = essentialsError
+                )
             }
 
             2 -> {
