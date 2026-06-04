@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.aneesh.healthmaxxing.data.remote.InsightsResponse
+import com.aneesh.healthmaxxing.data.remote.TrendPoint
 
 @Composable
 fun MetricTabContent(
@@ -27,6 +28,8 @@ fun MetricTabContent(
     insightsResponse: InsightsResponse?,
     isLoading: Boolean,
     error: String?,
+    momentumTrends: Map<String, List<TrendPoint>> = emptyMap(),
+    momentumTrendsLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -48,7 +51,11 @@ fun MetricTabContent(
                         textAlign = TextAlign.Center
                     )
                 } else if (insightsResponse != null) {
-                    AI(insightsResponse = insightsResponse)
+                    AI(
+                        insightsResponse = insightsResponse,
+                        momentumTrends = momentumTrends,
+                        momentumTrendsLoading = momentumTrendsLoading
+                    )
                 } else {
                     Text(
                         text = "No insights available.",
