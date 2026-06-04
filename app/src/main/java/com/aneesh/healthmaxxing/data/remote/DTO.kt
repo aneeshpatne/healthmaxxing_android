@@ -78,7 +78,8 @@ data class Insights(
 data class InsightSection(
     @SerializedName("headline") val headline: String,
     @SerializedName("supporting_description") val supportingDescription: String,
-    @SerializedName("actionable_insight") val actionableInsight: String
+    @SerializedName("actionable_insight") val actionableInsight: String,
+    @SerializedName("factors") val factors: List<String>? = null
 )
 
 data class EffortScore(
