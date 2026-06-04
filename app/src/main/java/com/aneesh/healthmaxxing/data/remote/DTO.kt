@@ -89,3 +89,18 @@ data class EffortScore(
     @SerializedName("modelName") val modelName: String,
     @SerializedName("updatedAt") val updatedAt: String
 )
+
+data class BodyCompositionTrendResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("metric") val metric: String,
+    @SerializedName("period") val period: String,
+    @SerializedName("profileId") val profileId: String?,
+    @SerializedName("points") val points: List<TrendPoint>,
+    @SerializedName("error") val error: String? = null
+)
+
+data class TrendPoint(
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("value") val value: Double
+)
