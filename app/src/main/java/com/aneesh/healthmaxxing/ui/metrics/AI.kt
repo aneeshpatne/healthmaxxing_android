@@ -6,6 +6,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -65,6 +67,9 @@ import com.aneesh.healthmaxxing.R
 import com.aneesh.healthmaxxing.data.remote.EffortScore
 import com.aneesh.healthmaxxing.data.remote.InsightSection
 import com.aneesh.healthmaxxing.data.remote.InsightsResponse
+import com.aneesh.healthmaxxing.data.remote.TrendPoint
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 private val AiTextPrimary = Color(0xFF172A35)
 private val AiTextSecondary = Color(0xFF6B7A86)
@@ -75,7 +80,9 @@ private val AiSurfaceSoft = Color(0xFFF8FAFC)
 
 @Composable
 fun AI(
-    insightsResponse: InsightsResponse
+    insightsResponse: InsightsResponse,
+    momentumTrends: Map<String, List<TrendPoint>> = emptyMap(),
+    momentumTrendsLoading: Boolean = false
 ) {
     val insights = insightsResponse.insights
     val effortScore = insightsResponse.effortScore
@@ -89,7 +96,11 @@ fun AI(
             remarks = insights.overviewRemarks
         )
         HeroInsightCard(insightSection = insights.foundation)
-        MomentumInsightCard(insightSection = insights.momentum)
+        MomentumInsightCard(
+            insightSection = insights.momentum,
+            trends = momentumTrends,
+            trendsLoading = momentumTrendsLoading
+        )
         BiggestLeverInsightCard(insightSection = insights.biggestLever)
         PhysiqueArchetypeCard(archetype = insights.physiqueArchetype)
         EffortScoreCard(effortScore = effortScore)
@@ -121,6 +132,8 @@ fun HeroInsightCard(
 @Composable
 fun MomentumInsightCard(
     insightSection: InsightSection,
+    trends: Map<String, List<TrendPoint>> = emptyMap(),
+    trendsLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     AiInsightCard(
@@ -138,7 +151,17 @@ fun MomentumInsightCard(
         supportingText = insightSection.supportingDescription,
         footerText = insightSection.actionableInsight
     ) {
-        MomentumTrendGraph()
+        if (trendsLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .shimmerEffect()
+            )
+        } else if (trends.isNotEmpty()) {
+            MomentumTrendGraph(trends = trends)
+        }
     }
 }
 
@@ -475,10 +498,109 @@ private fun AiInsightCard(
     }
 }
 
+/** Palette of distinct colors for trend lines */
+private val TrendLineColors = listOf(
+    Color(0xFF34A77B), // green
+    Color(0xFF4354B8), // blue
+    Color(0xFFE07B39), // orange
+    Color(0xFFA855F7), // purple
+    Color(0xFFEF4444), // red
+    Color(0xFF0EA5E9), // sky
+    Color(0xFFF59E0B), // amber
+    Color(0xFF14B8A6), // teal
+)
+
+/** Pretty-prints metric keys like "body_fat_pct" → "Body Fat %" */
+private fun metricDisplayName(key: String): String {
+    val mapped = mapOf(
+        "bmi" to "BMI",
+        "body_fat_pct" to "Body Fat %",
+        "fat_mass_kg" to "Fat Mass",
+        "fat_free_mass_kg" to "Fat-Free Mass",
+        "desired_weight_kg" to "Desired Weight",
+        "body_score" to "Body Score",
+        "body_age_years" to "Body Age",
+        "water_pct" to "Water %",
+        "muscle_mass_kg" to "Muscle Mass",
+        "muscle_rate_pct" to "Muscle Rate %",
+        "bmr_kcal" to "BMR",
+        "visceral_fat" to "Visceral Fat",
+        "ideal_weight_kg" to "Ideal Weight",
+        "protein_mass_kg" to "Protein Mass",
+        "protein_pct" to "Protein %",
+        "skeletal_muscle_kg" to "Skeletal Muscle",
+        "subcutaneous_fat_pct" to "Subcut. Fat %",
+        "subcutaneous_fat_mass_kg" to "Subcut. Fat Mass",
+        "predicted_lean_mass_kg" to "Lean Mass"
+    )
+    return mapped[key] ?: key.replace("_", " ")
+        .replaceFirstChar { it.uppercase() }
+}
+
 @Composable
 private fun MomentumTrendGraph(
+    trends: Map<String, List<TrendPoint>>,
     modifier: Modifier = Modifier
 ) {
+    // Filter to metrics that actually have 2+ points (need at least 2 to draw a line)
+    val validTrends = remember(trends) {
+        trends.filter { it.value.size >= 2 }
+    }
+    if (validTrends.isEmpty()) return
+
+    val metricKeys = remember(validTrends) { validTrends.keys.toList() }
+
+    // Parse dates once
+    val inputFormat = remember {
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+    }
+    val displayFormat = remember {
+        SimpleDateFormat("MMM d", Locale.US)
+    }
+
+    // Pre-process: for each metric, sort points by time and extract timestamps
+    data class ProcessedSeries(
+        val metric: String,
+        val values: List<Float>,
+        val timestamps: List<Long>,
+        val color: Color
+    )
+
+    val seriesList = remember(validTrends) {
+        metricKeys.mapIndexed { index, metric ->
+            val points = validTrends[metric]!!
+                .mapNotNull { pt ->
+                    val time = try {
+                        inputFormat.parse(pt.createdAt)?.time
+                    } catch (_: Exception) { null }
+                    if (time != null) time to pt.value.toFloat() else null
+                }
+                .sortedBy { it.first }
+
+            ProcessedSeries(
+                metric = metric,
+                values = points.map { it.second },
+                timestamps = points.map { it.first },
+                color = TrendLineColors[index % TrendLineColors.size]
+            )
+        }
+    }
+
+    // Compute global time range for the X axis
+    val globalMinTime = remember(seriesList) { seriesList.minOf { it.timestamps.min() } }
+    val globalMaxTime = remember(seriesList) { seriesList.maxOf { it.timestamps.max() } }
+    val timeSpan = (globalMaxTime - globalMinTime).coerceAtLeast(1L)
+
+    // Generate date labels (up to 5 evenly spaced)
+    val dateLabels = remember(globalMinTime, globalMaxTime) {
+        val count = 5
+        (0 until count).map { i ->
+            val t = globalMinTime + (timeSpan * i / (count - 1))
+            val fraction = i.toFloat() / (count - 1)
+            fraction to displayFormat.format(java.util.Date(t))
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -488,13 +610,19 @@ private fun MomentumTrendGraph(
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
+        // Legend row — uses FlowRow so items wrap instead of compressing text
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            GraphLegend(label = "Body Fat", color = AiGreen)
-            GraphLegend(label = "Muscle Mass", color = AiBlue)
+            seriesList.forEach { series ->
+                GraphLegend(
+                    label = metricDisplayName(series.metric),
+                    color = series.color
+                )
+            }
         }
 
         Canvas(
@@ -516,6 +644,7 @@ private fun MomentumTrendGraph(
                 isAntiAlias = true
             }
 
+            // Horizontal grid lines
             repeat(4) { index ->
                 val ratio = index / 3f
                 val y = top + ratio * chartHeight
@@ -528,60 +657,59 @@ private fun MomentumTrendGraph(
                 )
             }
 
-            val dates = listOf("Apr 20", "Apr 27", "May 4", "May 11", "May 18")
-            dates.forEachIndexed { index, date ->
-                val x = left + (index / (dates.lastIndex).toFloat()) * chartWidth
+            // Date labels on X axis
+            dateLabels.forEach { (fraction, label) ->
+                val x = left + fraction * chartWidth
                 drawIntoCanvas { canvas ->
                     labelPaint.textAlign = android.graphics.Paint.Align.CENTER
-                    canvas.nativeCanvas.drawText(date, x, size.height - 4.dp.toPx(), labelPaint)
+                    canvas.nativeCanvas.drawText(label, x, size.height - 4.dp.toPx(), labelPaint)
                 }
             }
 
-            val bodyFat = listOf(20.3f, 19.8f, 19.4f, 19.0f, 18.7f)
-            val muscleMass = listOf(39.4f, 39.6f, 39.9f, 40.1f, 40.3f)
+            // Draw each trend line
+            seriesList.forEach { series ->
+                val valMin = series.values.min()
+                val valMax = series.values.max()
+                val valPadding = ((valMax - valMin) * 0.15f).coerceAtLeast(0.5f)
+                val rangeMin = valMin - valPadding
+                val rangeMax = valMax + valPadding
+                val range = (rangeMax - rangeMin).coerceAtLeast(0.001f)
 
-            fun points(values: List<Float>, min: Float, max: Float): List<Offset> {
-                return values.mapIndexed { index, value ->
-                    val x = left + (index / values.lastIndex.toFloat()) * chartWidth
-                    val y = bottomY - ((value - min) / (max - min)).coerceIn(0f, 1f) * chartHeight
+                val offsets = series.values.mapIndexed { i, value ->
+                    val xFraction = (series.timestamps[i] - globalMinTime).toFloat() / timeSpan
+                    val x = left + xFraction * chartWidth
+                    val y = bottomY - ((value - rangeMin) / range).coerceIn(0f, 1f) * chartHeight
                     Offset(x, y)
                 }
-            }
 
-            fun smoothPath(points: List<Offset>): Path {
-                return Path().apply {
-                    if (points.isEmpty()) return@apply
-                    moveTo(points.first().x, points.first().y)
-                    for (index in 0 until points.lastIndex) {
-                        val start = points[index]
-                        val end = points[index + 1]
-                        val controlDistance = (end.x - start.x) / 2f
+                // Smooth cubic path
+                val path = Path().apply {
+                    if (offsets.isEmpty()) return@apply
+                    moveTo(offsets.first().x, offsets.first().y)
+                    for (idx in 0 until offsets.lastIndex) {
+                        val start = offsets[idx]
+                        val end = offsets[idx + 1]
+                        val controlDist = (end.x - start.x) / 2f
                         cubicTo(
-                            start.x + controlDistance,
-                            start.y,
-                            end.x - controlDistance,
-                            end.y,
-                            end.x,
-                            end.y
+                            start.x + controlDist, start.y,
+                            end.x - controlDist, end.y,
+                            end.x, end.y
                         )
                     }
                 }
-            }
 
-            fun drawTrend(points: List<Offset>, color: Color) {
                 drawPath(
-                    path = smoothPath(points),
-                    color = color,
+                    path = path,
+                    color = series.color,
                     style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                 )
-                points.forEach { point ->
+
+                // Data point dots
+                offsets.forEach { point ->
                     drawCircle(color = Color.White, radius = 5.dp.toPx(), center = point)
-                    drawCircle(color = color, radius = 3.5.dp.toPx(), center = point)
+                    drawCircle(color = series.color, radius = 3.5.dp.toPx(), center = point)
                 }
             }
-
-            drawTrend(points(bodyFat, 16f, 24f), AiGreen)
-            drawTrend(points(muscleMass, 38f, 42f), AiBlue)
         }
     }
 }
@@ -593,12 +721,16 @@ private fun GraphLegend(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.08f))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(8.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .size(6.dp)
+                .clip(RoundedCornerShape(3.dp))
                 .background(color)
         )
         Text(
@@ -607,6 +739,7 @@ private fun GraphLegend(
             fontSize = 10.sp,
             lineHeight = 12.sp,
             fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
             style = compactAiTextStyle()
         )
     }
