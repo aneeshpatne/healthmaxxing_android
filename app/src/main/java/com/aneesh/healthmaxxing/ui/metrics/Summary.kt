@@ -35,11 +35,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ShowChart
-import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Card
@@ -83,11 +80,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.R
+import com.aneesh.healthmaxxing.data.remote.CompositionSummary
+import com.aneesh.healthmaxxing.data.remote.Measurements
+import com.aneesh.healthmaxxing.data.remote.ProfileEssentialsResponse
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-
 
 private val TextPrimary = Color(0xFF172A35)
 private val TextSecondary = Color(0xFF6B7A86)
@@ -153,16 +152,21 @@ private val ChartLabelWidth = 100.dp
 private val ChartLabelHorizontalPadding = 8.dp
 private val MuscleMassElbowOffsetX = 20.dp
 
-private val segments = listOf(
-    SummarySegment("Lean Mass", "27.5%", Blue, 27.5f, isLeft = false),
-    SummarySegment("Protein", "6.3%", Purple, 6.3f, isLeft = false),
-    SummarySegment("Hydration", "53.2%", Cyan, 53.2f, isLeft = false),
-    SummarySegment("Muscle Mass", "38.7%", Green, 38.7f, isLeft = true),
-    SummarySegment("Body Fat", "24.3%", Orange, 24.3f, isLeft = true)
-)
+fun formatDateTime(dateString: String): String {
+    return try {
+        val parser = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+        val formatter = java.text.SimpleDateFormat("MMM dd, yyyy • h:mm a", java.util.Locale.US)
+        parser.parse(dateString)?.let { formatter.format(it) } ?: dateString
+    } catch (e: Exception) {
+        dateString
+    }
+}
 
 @Composable
 fun Summary(
+    essentialsResponse: ProfileEssentialsResponse?,
+    isLoading: Boolean,
+    error: String?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -172,16 +176,30 @@ fun Summary(
             .padding(horizontal = 2.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        SummaryHeader()
-        FormaScoreCard()
+        val essentials = essentialsResponse?.essentials
 
-        BodyAgeHealthScoreCard()
+        if (essentials != null) {
+            SummaryHeader(dateString = essentials.measurements.createdAt)
+            FormaScoreCard(score = essentials.formaScore.score, status = essentials.formaScore.remark)
 
+            BodyAgeHealthScoreCard(
+                model = BodyAgeComparisonUiModel(
+                    bodyAge = essentials.bodyAge,
+                    actualAge = essentials.realAge
+                )
+            )
 
-        BodyCompositionPanel()
-        BodyMeasurementsPanel()
-        WeightDashboard()
-//        Stats()
+            BodyCompositionPanel(composition = essentials.compositionSummary)
+            BodyMeasurementsPanel(measurements = essentials.measurements)
+            WeightDashboard(
+                currentWeight = essentials.currentWeight.toFloat(),
+                goalWeight = essentials.goalWeight.toFloat(),
+                averageWeight = essentials.averageWeight30d.toFloat(),
+                lowestWeight = essentials.lowestWeight30d.toFloat(),
+                weights = if (essentials.last30DaysWeightTrend.isEmpty()) defaultWeightDataKg else essentials.last30DaysWeightTrend.map { it.weight.toFloat() },
+                dateLabel = formatDateTime(essentials.last30DaysWeightTrend.lastOrNull()?.createdAt ?: essentials.measurements.createdAt)
+            )
+        }
     }
 }
 
@@ -663,7 +681,6 @@ fun FormaScoreCard(
     score: Int = 86,
     maxScore: Int = 100,
     status: String = "Good",
-    supportingText: String = "Better than 86% of\npeople your age"
 ) {
     val progress = (score.toFloat() / maxScore.toFloat()).coerceIn(0f, 1f)
 
@@ -773,15 +790,6 @@ fun FormaScoreCard(
                         lineHeight = 18.sp,
                         style = compactTextStyle()
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = supportingText,
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
-                        color = FormaScoreColors.SecondaryText,
-                        textAlign = TextAlign.Center,
-                        style = compactTextStyle()
-                    )
                 }
 
                 Text(
@@ -810,7 +818,7 @@ fun FormaScoreCard(
 
 
 @Composable
-private fun SummaryHeader() {
+private fun SummaryHeader(dateString: String = "May 12, 2024 • 8:15 AM") {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -826,7 +834,7 @@ private fun SummaryHeader() {
                 style = compactTextStyle()
             )
             Text(
-                text = "May 12, 2024 • 8:15 AM",
+                text = formatDateTime(dateString),
                 color = TextSecondary,
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
@@ -862,7 +870,7 @@ private fun SummaryHeader() {
 }
 
 @Composable
-private fun BodyCompositionPanel() {
+private fun BodyCompositionPanel(composition: CompositionSummary) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -880,7 +888,14 @@ private fun BodyCompositionPanel() {
                 contentAlignment = Alignment.Center
             ) {
                 val chartSize = maxWidth.coerceAtMost(340.dp)
-                DonutChart(chartSize = chartSize)
+                val dynamicSegments = listOf(
+                    SummarySegment("Lean Mass", "${composition.leanMassPct}%", Blue, composition.leanMassPct.toFloat(), isLeft = false),
+                    SummarySegment("Protein", "${composition.proteinPct}%", Purple, composition.proteinPct.toFloat(), isLeft = false),
+                    SummarySegment("Hydration", "${composition.hydrationPct}%", Cyan, composition.hydrationPct.toFloat(), isLeft = false),
+                    SummarySegment("Muscle Mass", "${composition.muscleMassPct}%", Green, composition.muscleMassPct.toFloat(), isLeft = true),
+                    SummarySegment("Body Fat", "${composition.bodyFatPct}%", Orange, composition.bodyFatPct.toFloat(), isLeft = true)
+                )
+                DonutChart(chartSize = chartSize, segments = dynamicSegments, compositionScore = composition.compositionScore)
             }
 
             HorizontalDivider(
@@ -933,7 +948,7 @@ private fun ChartLabel(
 }
 
 @Composable
-private fun DonutChart(chartSize: Dp) {
+private fun DonutChart(chartSize: Dp, segments: List<SummarySegment>, compositionScore: Int) {
     Box(
         modifier = Modifier
             .size(width = chartSize, height = 300.dp),
@@ -951,7 +966,7 @@ private fun DonutChart(chartSize: Dp) {
             val outerRadius = donutRadius + strokeWidth / 2f
             val innerRadius = donutRadius - strokeWidth / 2f
 
-            val total = segments.sumOf { it.amount.toDouble() }.toFloat()
+            val total = segments.sumOf { it.amount.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
             var startAngle = -90f
             val gapAngle = 4f
 
@@ -1053,7 +1068,7 @@ private fun DonutChart(chartSize: Dp) {
             modifier = Modifier.align(Alignment.Center)
         ) {
             Text(
-                text = "84",
+                text = compositionScore.toString(),
                 color = TextPrimary,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
@@ -1088,7 +1103,7 @@ private fun DonutChart(chartSize: Dp) {
         // Position the labels manually around the chart
         ChartLabel(
             label = "Body Fat",
-            value = "24.3%",
+            value = segments.find { it.label == "Body Fat" }?.value ?: "",
             color = Orange,
             alignment = Alignment.TopStart,
             modifier = Modifier
@@ -1098,7 +1113,7 @@ private fun DonutChart(chartSize: Dp) {
 
         ChartLabel(
             label = "Muscle Mass",
-            value = "38.7%",
+            value = segments.find { it.label == "Muscle Mass" }?.value ?: "",
             color = Green,
             alignment = Alignment.BottomStart,
             modifier = Modifier
@@ -1108,7 +1123,7 @@ private fun DonutChart(chartSize: Dp) {
 
         ChartLabel(
             label = "Lean Mass",
-            value = "27.5%",
+            value = segments.find { it.label == "Lean Mass" }?.value ?: "",
             color = Blue,
             alignment = Alignment.TopEnd,
             modifier = Modifier
@@ -1118,7 +1133,7 @@ private fun DonutChart(chartSize: Dp) {
 
         ChartLabel(
             label = "Protein",
-            value = "6.3%",
+            value = segments.find { it.label == "Protein" }?.value ?: "",
             color = Purple,
             alignment = Alignment.CenterEnd,
             modifier = Modifier
@@ -1128,7 +1143,7 @@ private fun DonutChart(chartSize: Dp) {
 
         ChartLabel(
             label = "Hydration",
-            value = "53.2%",
+            value = segments.find { it.label == "Hydration" }?.value ?: "",
             color = Cyan,
             alignment = Alignment.BottomEnd,
             modifier = Modifier
@@ -1241,6 +1256,7 @@ private fun compactTextStyle() = TextStyle(
 
 @Composable
 private fun BodyMeasurementsPanel(
+    measurements: Measurements,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "infinite")
@@ -1389,11 +1405,13 @@ private fun BodyMeasurementsPanel(
                     fun drawMarkerAndLine(
                         vx: Float,
                         vy: Float,
-                        toRight: Boolean
+                        toRight: Boolean,
+                        endVy: Float = vy
                     ) {
                         val markerPos = getCanvasCoords(vx, vy)
                         val endX = if (toRight) rightLineEndX else leftLineEndX
-                        val lineEnd = Offset(endX, markerPos.y)
+                        val endY = getCanvasCoords(vx, endVy).y
+                        val lineEnd = Offset(endX, endY)
                         val dottedEffect = if (toRight) dottedEffectRight else dottedEffectLeft
 
                         // Thin dotted guide line (always full length, flowing animated dots)
@@ -1432,19 +1450,22 @@ private fun BodyMeasurementsPanel(
                     drawMarkerAndLine(50.0f, 14.5f, toRight = false)
 
                     // Shoulder: Right side
-                    drawMarkerAndLine(62.0f, 22.5f, toRight = true)
+                    drawMarkerAndLine(62.0f, 22.5f, toRight = true, endVy = 16.0f)
 
                     // Chest: Left side
                     drawMarkerAndLine(50.0f, 28.0f, toRight = false)
 
                     // Bicep: Right side
-                    drawMarkerAndLine(63.5f, 34.0f, toRight = true)
+                    drawMarkerAndLine(63.5f, 34.0f, toRight = true, endVy = 31.0f)
 
                     // Waist: Left side
                     drawMarkerAndLine(50.0f, 42.0f, toRight = false)
 
+                    // Stomach: Right side
+                    drawMarkerAndLine(50.0f, 48.0f, toRight = true, endVy = 46.0f)
+
                     // Thighs: Right side
-                    drawMarkerAndLine(56.5f, 58.0f, toRight = true)
+                    drawMarkerAndLine(56.5f, 58.0f, toRight = true, endVy = 61.0f)
 
                     // Calf: Left side
                     drawMarkerAndLine(43.0f, 79.0f, toRight = false)
@@ -1456,7 +1477,7 @@ private fun BodyMeasurementsPanel(
                 // Right side labels
                 MeasurementLabel(
                     label = "Shoulder",
-                    value = "114.6",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.shoulderCm),
                     unit = "cm",
                     isLeft = false,
                     modifier = Modifier
@@ -1465,14 +1486,14 @@ private fun BodyMeasurementsPanel(
                         .offset {
                             IntOffset(
                                 x = 0,
-                                y = (topPx + 22.5f * scale - 15.dp.toPx()).toInt()
+                                y = (topPx + 16.0f * scale - 15.dp.toPx()).toInt()
                             )
                         }
                 )
 
                 MeasurementLabel(
                     label = "Bicep",
-                    value = "33.2",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.bicepCm),
                     unit = "cm",
                     isLeft = false,
                     modifier = Modifier
@@ -1481,14 +1502,30 @@ private fun BodyMeasurementsPanel(
                         .offset {
                             IntOffset(
                                 x = 0,
-                                y = (topPx + 34.0f * scale - 15.dp.toPx()).toInt()
+                                y = (topPx + 31.0f * scale - 15.dp.toPx()).toInt()
+                            )
+                        }
+                )
+
+                MeasurementLabel(
+                    label = "Stomach",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.stomachCm),
+                    unit = "cm",
+                    isLeft = false,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 10.dp)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = (topPx + 46.0f * scale - 15.dp.toPx()).toInt()
                             )
                         }
                 )
 
                 MeasurementLabel(
                     label = "Thighs",
-                    value = "58.3",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.thighCm),
                     unit = "cm",
                     isLeft = false,
                     modifier = Modifier
@@ -1497,7 +1534,7 @@ private fun BodyMeasurementsPanel(
                         .offset {
                             IntOffset(
                                 x = 0,
-                                y = (topPx + 58.0f * scale - 15.dp.toPx()).toInt()
+                                y = (topPx + 61.0f * scale - 15.dp.toPx()).toInt()
                             )
                         }
                 )
@@ -1505,7 +1542,7 @@ private fun BodyMeasurementsPanel(
                 // Left side labels
                 MeasurementLabel(
                     label = "Neck",
-                    value = "38.2",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.neckCm),
                     unit = "cm",
                     isLeft = true,
                     modifier = Modifier
@@ -1521,7 +1558,7 @@ private fun BodyMeasurementsPanel(
 
                 MeasurementLabel(
                     label = "Chest",
-                    value = "102.6",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.chestCm),
                     unit = "cm",
                     isLeft = true,
                     modifier = Modifier
@@ -1537,7 +1574,7 @@ private fun BodyMeasurementsPanel(
 
                 MeasurementLabel(
                     label = "Waist",
-                    value = "82.1",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.waistCm),
                     unit = "cm",
                     isLeft = true,
                     modifier = Modifier
@@ -1553,7 +1590,7 @@ private fun BodyMeasurementsPanel(
 
                 MeasurementLabel(
                     label = "Calf",
-                    value = "38.5",
+                    value = String.format(java.util.Locale.US, "%.1f", measurements.calfCm),
                     unit = "cm",
                     isLeft = true,
                     modifier = Modifier
@@ -1582,7 +1619,7 @@ private fun BodyMeasurementsPanel(
             ) {
                 CompactMetricItem(
                     label = "Shoulder\n÷ Waist",
-                    value = "1.40",
+                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.shoulderCm / measurements.waistCm) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1594,7 +1631,7 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Chest\n÷ Waist",
-                    value = "1.25",
+                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.chestCm / measurements.waistCm) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1606,7 +1643,7 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Bicep\n÷ Waist",
-                    value = "0.40",
+                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.bicepCm / measurements.waistCm) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1618,7 +1655,7 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Thigh\n÷ Waist",
-                    value = "0.71",
+                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.thighCm / measurements.waistCm) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1626,57 +1663,6 @@ private fun BodyMeasurementsPanel(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Body Type Indicator
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(
-                        color = SurfaceSoft,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFDBEAFE),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .padding(vertical = 12.dp, horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "BODY TYPE",
-                        color = Blue,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        style = compactTextStyle()
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Athletic V-Taper",
-                        color = TextPrimary,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        style = compactTextStyle()
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .background(Blue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = "V-SHAPE",
-                        color = Blue,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                        style = compactTextStyle()
-                    )
-                }
-            }
         }
     }
 }
@@ -1716,8 +1702,40 @@ fun WeightDashboard(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             CurrentWeightHeader(currentWeight, unit, dateLabel)
-            WeightTrendChart(weights, unit)
-            BottomMetricCards(averageWeight, lowestWeight, goalWeight, weights, unit)
+            WeightTrendChart(weights, unit, goalWeight)
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                MetricCard(
+                    icon = Icons.Filled.AutoAwesome,
+                    label = "Average",
+                    valueText = String.format(java.util.Locale.US, "%.1f", averageWeight),
+                    unit = unit,
+                    caption = "Last 30d",
+                    captionColor = TextSecondary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                MetricCard(
+                    icon = Icons.Filled.Person,
+                    label = "Lowest",
+                    valueText = String.format(java.util.Locale.US, "%.1f", lowestWeight),
+                    unit = unit,
+                    caption = "All time",
+                    captionColor = TextSecondary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                MetricCard(
+                    icon = Icons.Filled.Check,
+                    label = "Goal",
+                    valueText = String.format(java.util.Locale.US, "%.1f", goalWeight),
+                    unit = unit,
+                    caption = "${String.format(java.util.Locale.US, "%.1f", currentWeight - goalWeight)} left",
+                    captionColor = Success,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -1780,6 +1798,7 @@ private fun CurrentWeightHeader(
 private fun WeightTrendChart(
     weights: List<Float>,
     unit: String,
+    goalWeight: Float,
     modifier: Modifier = Modifier
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -1914,6 +1933,35 @@ private fun WeightTrendChart(
                     textPaint
                 )
             }
+        }
+
+        // 1.5 Goal Weight line
+        val goalNormalizedY = (goalWeight.coerceIn(minY, maxY) - minY) / (maxY - minY)
+        val goalY = plotBottom - goalNormalizedY * plotHeight
+
+        drawLine(
+            color = Success.copy(alpha = 0.8f),
+            start = Offset(plotLeft, goalY),
+            end = Offset(plotRight, goalY),
+            strokeWidth = 1.5.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
+        )
+
+        drawIntoCanvas { canvas ->
+            val textPaintGoal = android.graphics.Paint(textPaint).apply {
+                color = Success.toArgb()
+                textSize = with(density) { 10.sp.toPx() }
+                typeface = android.graphics.Typeface.create(
+                    android.graphics.Typeface.DEFAULT,
+                    android.graphics.Typeface.BOLD
+                )
+            }
+            canvas.nativeCanvas.drawText(
+                "Goal",
+                plotRight - 4.dp.toPx(),
+                goalY - 8.dp.toPx(),
+                android.graphics.Paint(textPaintGoal).apply { textAlign = android.graphics.Paint.Align.RIGHT }
+            )
         }
 
         // 2. Area fill under the line
@@ -2059,73 +2107,6 @@ private fun WeightTrendChart(
     }
 }
 
-@Composable
-private fun BottomMetricCards(
-    averageWeight: Float,
-    lowestWeight: Float,
-    goalWeight: Float,
-    weights: List<Float>,
-    unit: String,
-    modifier: Modifier = Modifier
-) {
-    val computedAvg = if (weights.isNotEmpty()) weights.average().toFloat() else averageWeight
-    val computedLowest =
-        if (weights.isNotEmpty()) (weights.minOrNull() ?: lowestWeight) else lowestWeight
-    val computedCurrent = if (weights.isNotEmpty()) weights.last() else averageWeight
-
-    val avgDiff = computedAvg - computedCurrent
-    val averageCaption = if (avgDiff >= 0) {
-        String.format(java.util.Locale.US, "↓ %.1f %s vs last 30D", avgDiff, unit)
-    } else {
-        String.format(java.util.Locale.US, "↑ %.1f %s vs last 30D", -avgDiff, unit)
-    }
-
-    val goalDiff = computedCurrent - goalWeight
-    val goalCaption = if (goalDiff > 0) {
-        String.format(java.util.Locale.US, "%.1f %s to go", goalDiff, unit)
-    } else {
-        "Goal reached!"
-    }
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        MetricCard(
-            icon = Icons.AutoMirrored.Filled.ShowChart,
-            label = "Average",
-            valueText = String.format(java.util.Locale.US, "%.1f", computedAvg),
-            unit = unit,
-            caption = averageCaption,
-            captionColor = Blue,
-            modifier = Modifier
-                .weight(1f)
-                .height(124.dp)
-        )
-        MetricCard(
-            icon = Icons.Default.ArrowDownward,
-            label = "Lowest",
-            valueText = String.format(java.util.Locale.US, "%.1f", computedLowest),
-            unit = unit,
-            caption = "May 18, 2024",
-            captionColor = TextSecondary,
-            modifier = Modifier
-                .weight(1f)
-                .height(124.dp)
-        )
-        MetricCard(
-            icon = Icons.Default.MyLocation,
-            label = "Goal",
-            valueText = String.format(java.util.Locale.US, "%.1f", goalWeight),
-            unit = unit,
-            caption = goalCaption,
-            captionColor = Blue,
-            modifier = Modifier
-                .weight(1f)
-                .height(124.dp)
-        )
-    }
-}
 
 @Composable
 private fun MetricCard(
@@ -2140,15 +2121,15 @@ private fun MetricCard(
     CustomizedCard(
         modifier = modifier
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(40.dp)
                     .background(Blue.copy(alpha = 0.10f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -2156,55 +2137,57 @@ private fun MetricCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = Blue,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = label,
                     style = TextStyle(
-                        fontSize = 11.sp,
-                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        color = TextPrimary,
                         fontWeight = FontWeight.Medium
                     )
                 )
-                Row(
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text(
-                        text = valueText,
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        ),
-                        modifier = Modifier.alignByBaseline()
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = unit,
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        ),
-                        modifier = Modifier.alignByBaseline()
-                    )
-                }
+                Text(
+                    text = caption,
+                    style = TextStyle(
+                        fontSize = 12.sp,
+                        color = captionColor,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    maxLines = 1
+                )
             }
 
-            Text(
-                text = caption,
-                style = TextStyle(
-                    fontSize = 9.5.sp,
-                    lineHeight = 12.sp,
-                    color = captionColor,
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 2
-            )
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = valueText,
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    ),
+                    modifier = Modifier.alignByBaseline()
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = unit,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = TextSecondary
+                    ),
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
         }
     }
 }
