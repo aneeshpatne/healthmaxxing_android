@@ -84,9 +84,7 @@ import com.aneesh.healthmaxxing.data.remote.CompositionSummary
 import com.aneesh.healthmaxxing.data.remote.Measurements
 import com.aneesh.healthmaxxing.data.remote.ProfileEssentialsResponse
 import kotlinx.coroutines.delay
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+
 
 private val TextPrimary = Color(0xFF172A35)
 private val TextSecondary = Color(0xFF6B7A86)
@@ -143,14 +141,9 @@ data class BodyAgeComparisonUiModel(
         }
 }
 
-private val BodyFatTopPadding = 36.dp
-private val MuscleMassBottomPadding = 80.dp
-private val LeanMassTopPadding = 30.dp
-private val ProteinBottomPadding = 32.dp
-private val HydrationBottomPadding = 44.dp
-private val ChartLabelWidth = 100.dp
-private val ChartLabelHorizontalPadding = 8.dp
-private val MuscleMassElbowOffsetX = 20.dp
+// Donut chart colors for lean mass vs body fat
+private val LeanMassBlue = Color(0xFF4A6CF7)
+private val BodyFatAmber = Color(0xFFF59E0B)
 
 fun formatDateTime(dateString: String): String {
     return try {
@@ -883,25 +876,64 @@ private fun BodyCompositionPanel(composition: CompositionSummary) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BoxWithConstraints(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val chartSize = maxWidth.coerceAtMost(340.dp)
-                val dynamicSegments = listOf(
-                    SummarySegment("Lean Mass", "${composition.leanMassPct}%", Blue, composition.leanMassPct.toFloat(), isLeft = false),
-                    SummarySegment("Protein", "${composition.proteinPct}%", Purple, composition.proteinPct.toFloat(), isLeft = false),
-                    SummarySegment("Hydration", "${composition.hydrationPct}%", Cyan, composition.hydrationPct.toFloat(), isLeft = false),
-                    SummarySegment("Muscle Mass", "${composition.muscleMassPct}%", Green, composition.muscleMassPct.toFloat(), isLeft = true),
-                    SummarySegment("Body Fat", "${composition.bodyFatPct}%", Orange, composition.bodyFatPct.toFloat(), isLeft = true)
+                Text(
+                    text = "Body Composition",
+                    fontSize = 22.sp,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    style = compactTextStyle()
                 )
-                DonutChart(chartSize = chartSize, segments = dynamicSegments, compositionScore = composition.compositionScore)
+                Text(
+                    text = "Your lean mass vs body fat breakdown.",
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    color = TextSecondary,
+                    style = compactTextStyle()
+                )
             }
+
+            // ── Upper section: Lean Mass vs Body Fat donut ──
+            CompositionDonutSection(
+                leanMassPct = composition.leanMassPct.toFloat(),
+                bodyFatPct = composition.bodyFatPct.toFloat(),
+                compositionScore = composition.compositionScore
+            )
 
             HorizontalDivider(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 2.dp),
+                color = BorderSoft
+            )
+
+            // ── Lower section: Other metrics as stat rows ──
+            CompositionStatRow(
+                label = "Muscle Mass",
+                value = "${composition.muscleMassPct}%",
+                color = Green,
+                progress = (composition.muscleMassPct / 100.0).toFloat().coerceIn(0f, 1f)
+            )
+            CompositionStatRow(
+                label = "Protein",
+                value = "${composition.proteinPct}%",
+                color = Purple,
+                progress = (composition.proteinPct / 100.0).toFloat().coerceIn(0f, 1f)
+            )
+            CompositionStatRow(
+                label = "Hydration",
+                value = "${composition.hydrationPct}%",
+                color = Cyan,
+                progress = (composition.hydrationPct / 100.0).toFloat().coerceIn(0f, 1f)
+            )
+
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp),
                 color = BorderSoft
             )
 
@@ -911,244 +943,211 @@ private fun BodyCompositionPanel(composition: CompositionSummary) {
 }
 
 @Composable
-private fun ChartLabel(
-    label: String,
-    value: String,
-    color: Color,
-    alignment: Alignment,
-    modifier: Modifier = Modifier
+private fun CompositionDonutSection(
+    leanMassPct: Float,
+    bodyFatPct: Float,
+    compositionScore: Int
 ) {
-    val isLeft = alignment == Alignment.TopStart || alignment == Alignment.BottomStart
     Column(
-        modifier = modifier
-            .width(ChartLabelWidth)
-            .padding(horizontal = 4.dp),
-        horizontalAlignment = if (isLeft) Alignment.Start else Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(1.dp)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text(
-            text = value,
-            color = color,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 18.sp,
-            style = compactTextStyle(),
-            textAlign = if (isLeft) TextAlign.Start else TextAlign.End
+        // Donut chart
+        Box(
+            modifier = Modifier.size(200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val total = (leanMassPct + bodyFatPct).coerceAtLeast(1f)
+            val leanSweep = (leanMassPct / total) * 360f
+            val fatSweep = (bodyFatPct / total) * 360f
+            val gapAngle = 3f
+
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeWidth = 22.dp.toPx()
+                val radius = (size.minDimension - strokeWidth) / 2f
+                val topLeft = Offset(
+                    (size.width - radius * 2) / 2f,
+                    (size.height - radius * 2) / 2f
+                )
+                val arcSize = Size(radius * 2, radius * 2)
+
+                // Background track
+                drawArc(
+                    color = Color(0xFFF1F4F8),
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                )
+
+                // Lean Mass arc
+                drawArc(
+                    color = LeanMassBlue,
+                    startAngle = -90f,
+                    sweepAngle = (leanSweep - gapAngle).coerceAtLeast(0f),
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+
+                // Body Fat arc
+                drawArc(
+                    color = BodyFatAmber,
+                    startAngle = -90f + leanSweep + gapAngle,
+                    sweepAngle = (fatSweep - gapAngle * 2).coerceAtLeast(0f),
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                )
+            }
+
+            // Center content
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    text = compositionScore.toString(),
+                    color = TextPrimary,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 38.sp,
+                    style = compactTextStyle()
+                )
+                Text(
+                    text = "Score",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 14.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color(0xFFE8F5E9))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "Excellent",
+                        color = Success,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = compactTextStyle()
+                    )
+                }
+            }
+        }
+
+        // Legend row beneath donut
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            DonutLegendItem(
+                color = LeanMassBlue,
+                label = "Lean Mass",
+                value = "${leanMassPct.toInt()}%"
+            )
+            DonutLegendItem(
+                color = BodyFatAmber,
+                label = "Body Fat",
+                value = "${bodyFatPct.toInt()}%"
+            )
+        }
+    }
+}
+
+@Composable
+private fun DonutLegendItem(
+    color: Color,
+    label: String,
+    value: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape)
         )
         Text(
             text = label,
             color = TextSecondary,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            lineHeight = 14.sp,
-            style = compactTextStyle(),
-            textAlign = if (isLeft) TextAlign.Start else TextAlign.End
+            style = compactTextStyle()
+        )
+        Text(
+            text = value,
+            color = TextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = compactTextStyle()
         )
     }
 }
 
 @Composable
-private fun DonutChart(chartSize: Dp, segments: List<SummarySegment>, compositionScore: Int) {
-    Box(
+private fun CompositionStatRow(
+    label: String,
+    value: String,
+    color: Color,
+    progress: Float
+) {
+    Row(
         modifier = Modifier
-            .size(width = chartSize, height = 300.dp),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2f
-            val centerY = height / 2f
-
-            // donut radius is 25% of available width to leave room for labels/pointers
-            val donutRadius = minOf(width, height) * 0.25f
-            val strokeWidth = donutRadius * 0.32f
-            val outerRadius = donutRadius + strokeWidth / 2f
-            val innerRadius = donutRadius - strokeWidth / 2f
-
-            val total = segments.sumOf { it.amount.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
-            var startAngle = -90f
-            val gapAngle = 4f
-
-            // Draw background track
-            drawArc(
-                color = Color(0xFFEFF2F6),
-                startAngle = 0f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = Offset(centerX - donutRadius, centerY - donutRadius),
-                size = Size(donutRadius * 2, donutRadius * 2),
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-            )
-
-            // Match the fixed ChartLabel size and manual padding used below.
-            val labelHeight = 32.dp.toPx()
-            val labelHorizontalPadding = ChartLabelHorizontalPadding.toPx()
-
-            segments.forEach { segment ->
-                val sectionAngle = (segment.amount / total) * 360f
-                val sweepAngle = sectionAngle - gapAngle
-
-                // Draw colored segment arc
-                drawArc(
-                    color = segment.color,
-                    startAngle = startAngle,
-                    sweepAngle = sweepAngle,
-                    useCenter = false,
-                    topLeft = Offset(centerX - donutRadius, centerY - donutRadius),
-                    size = Size(donutRadius * 2, donutRadius * 2),
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-                )
-
-                // Calculate midpoint angle of segment
-                val midAngle = startAngle + sweepAngle / 2f
-                val midAngleRad = midAngle * (PI.toFloat() / 180f)
-
-                // Outer edge start point
-                val startX = centerX + cos(midAngleRad) * outerRadius
-                val startY = centerY + sin(midAngleRad) * outerRadius
-
-                // Elbow point
-                val extendedRadius = outerRadius + 24.dp.toPx()
-                val elbowX = centerX + cos(midAngleRad) * extendedRadius + when (segment.label) {
-                    "Muscle Mass" -> MuscleMassElbowOffsetX.toPx()
-                    else -> 0f
-                }
-
-                // Determine target Y based on the label's manual layout position
-                val targetY = when (segment.label) {
-                    "Body Fat" -> BodyFatTopPadding.toPx() + labelHeight / 2f
-                    "Lean Mass" -> LeanMassTopPadding.toPx() + labelHeight / 2f
-                    "Protein" -> (height / 2f) - (ProteinBottomPadding.toPx() / 2f)
-                    "Hydration" -> height - HydrationBottomPadding.toPx() - labelHeight / 2f
-                    "Muscle Mass" -> height - MuscleMassBottomPadding.toPx() - labelHeight / 2f
-                    else -> centerY
-                }
-
-                val endX = if (segment.isLeft) {
-                    labelHorizontalPadding
-                } else {
-                    width - labelHorizontalPadding
-                }
-                val endY = targetY
-
-                // Draw angled line segment
-                drawLine(
-                    color = segment.color.copy(alpha = 0.5f),
-                    start = Offset(startX, startY),
-                    end = Offset(elbowX, endY),
-                    strokeWidth = 1.5.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-
-                // Draw horizontal line segment
-                drawLine(
-                    color = segment.color.copy(alpha = 0.5f),
-                    start = Offset(elbowX, endY),
-                    end = Offset(endX, endY),
-                    strokeWidth = 1.5.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-
-                startAngle += sectionAngle
-            }
-
-            // Draw center white circle
-            drawCircle(
-                color = Color.White,
-                radius = innerRadius - 2.dp.toPx(),
-                center = Offset(centerX, centerY)
-            )
-        }
-
-        // Center score column
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.align(Alignment.Center)
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = label,
+            color = TextSecondary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            style = compactTextStyle(),
+            modifier = Modifier.width(100.dp)
+        )
+        // Mini progress bar
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(color.copy(alpha = 0.12f))
         ) {
-            Text(
-                text = compositionScore.toString(),
-                color = TextPrimary,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 40.sp,
-                style = compactTextStyle()
-            )
-            Text(
-                text = "Composition Score",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 14.sp,
-                style = compactTextStyle()
-            )
-            Spacer(modifier = Modifier.height(4.dp))
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(100.dp))
-                    .background(Color(0xFFE8F5E9))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = "Excellent",
-                    color = Success,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = compactTextStyle()
-                )
-            }
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction = progress)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(color)
+            )
         }
-
-        // Position the labels manually around the chart
-        ChartLabel(
-            label = "Body Fat",
-            value = segments.find { it.label == "Body Fat" }?.value ?: "",
-            color = Orange,
-            alignment = Alignment.TopStart,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 8.dp, top = BodyFatTopPadding)
-        )
-
-        ChartLabel(
-            label = "Muscle Mass",
-            value = segments.find { it.label == "Muscle Mass" }?.value ?: "",
-            color = Green,
-            alignment = Alignment.BottomStart,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 8.dp, bottom = MuscleMassBottomPadding)
-        )
-
-        ChartLabel(
-            label = "Lean Mass",
-            value = segments.find { it.label == "Lean Mass" }?.value ?: "",
-            color = Blue,
-            alignment = Alignment.TopEnd,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(end = 8.dp, top = LeanMassTopPadding)
-        )
-
-        ChartLabel(
-            label = "Protein",
-            value = segments.find { it.label == "Protein" }?.value ?: "",
-            color = Purple,
-            alignment = Alignment.CenterEnd,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 8.dp, bottom = ProteinBottomPadding)
-        )
-
-        ChartLabel(
-            label = "Hydration",
-            value = segments.find { it.label == "Hydration" }?.value ?: "",
-            color = Cyan,
-            alignment = Alignment.BottomEnd,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 8.dp, bottom = HydrationBottomPadding)
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = value,
+            color = TextPrimary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = compactTextStyle(),
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(48.dp)
         )
     }
 }
@@ -1242,13 +1241,7 @@ private fun TrendLineIcon(
     }
 }
 
-private data class SummarySegment(
-    val label: String,
-    val value: String,
-    val color: Color,
-    val amount: Float,
-    val isLeft: Boolean
-)
+
 
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)

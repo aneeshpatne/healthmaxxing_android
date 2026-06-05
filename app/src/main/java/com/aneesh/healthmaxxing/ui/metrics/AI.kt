@@ -604,11 +604,11 @@ private fun MomentumTrendGraph(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(AiSurfaceSoft)
-            .border(1.dp, AiCardBorder, RoundedCornerShape(18.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
+            .border(1.dp, AiCardBorder, RoundedCornerShape(20.dp))
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Legend row — uses FlowRow so items wrap instead of compressing text
         @OptIn(ExperimentalLayoutApi::class)
@@ -628,32 +628,32 @@ private fun MomentumTrendGraph(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(144.dp)
+                .height(160.dp)
         ) {
-            val left = 28.dp.toPx()
-            val right = 12.dp.toPx()
-            val top = 10.dp.toPx()
-            val bottom = 24.dp.toPx()
+            val left = 24.dp.toPx()
+            val right = 16.dp.toPx()
+            val top = 16.dp.toPx()
+            val bottom = 28.dp.toPx()
             val chartWidth = size.width - left - right
             val chartHeight = size.height - top - bottom
             val bottomY = size.height - bottom
 
             val labelPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.rgb(107, 122, 134)
-                textSize = 9.sp.toPx()
+                color = android.graphics.Color.rgb(150, 160, 170)
+                textSize = 10.sp.toPx()
                 isAntiAlias = true
+                typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
             }
 
-            // Horizontal grid lines
-            repeat(4) { index ->
-                val ratio = index / 3f
+            // Horizontal grid lines - subtle solid lines
+            repeat(5) { index ->
+                val ratio = index / 4f
                 val y = top + ratio * chartHeight
                 drawLine(
-                    color = AiCardBorder,
+                    color = Color(0xFFF0F3F5),
                     start = Offset(left, y),
                     end = Offset(size.width - right, y),
-                    strokeWidth = 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), 0f)
+                    strokeWidth = 1.dp.toPx()
                 )
             }
 
@@ -682,9 +682,10 @@ private fun MomentumTrendGraph(
                     Offset(x, y)
                 }
 
+                if (offsets.isEmpty()) return@forEach
+
                 // Smooth cubic path
                 val path = Path().apply {
-                    if (offsets.isEmpty()) return@apply
                     moveTo(offsets.first().x, offsets.first().y)
                     for (idx in 0 until offsets.lastIndex) {
                         val start = offsets[idx]
@@ -698,17 +699,47 @@ private fun MomentumTrendGraph(
                     }
                 }
 
+                // Fill path
+                val fillPath = Path().apply {
+                    moveTo(offsets.first().x, offsets.first().y)
+                    for (idx in 0 until offsets.lastIndex) {
+                        val start = offsets[idx]
+                        val end = offsets[idx + 1]
+                        val controlDist = (end.x - start.x) / 2f
+                        cubicTo(
+                            start.x + controlDist, start.y,
+                            end.x - controlDist, end.y,
+                            end.x, end.y
+                        )
+                    }
+                    lineTo(offsets.last().x, bottomY)
+                    lineTo(offsets.first().x, bottomY)
+                    close()
+                }
+
+                drawPath(
+                    path = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            series.color.copy(alpha = 0.15f),
+                            series.color.copy(alpha = 0.0f)
+                        ),
+                        startY = offsets.minOf { it.y },
+                        endY = bottomY
+                    )
+                )
+
+                // Line
                 drawPath(
                     path = path,
                     color = series.color,
                     style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                 )
 
-                // Data point dots
-                offsets.forEach { point ->
-                    drawCircle(color = Color.White, radius = 5.dp.toPx(), center = point)
-                    drawCircle(color = series.color, radius = 3.5.dp.toPx(), center = point)
-                }
+                // Data point dot only at the latest point (far right)
+                val lastPoint = offsets.last()
+                drawCircle(color = Color.White, radius = 5.dp.toPx(), center = lastPoint)
+                drawCircle(color = series.color, radius = 3.5.dp.toPx(), center = lastPoint)
             }
         }
     }
