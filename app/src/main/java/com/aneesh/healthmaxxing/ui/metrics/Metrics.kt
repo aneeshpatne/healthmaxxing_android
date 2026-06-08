@@ -24,7 +24,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 @Composable
 fun MetricsScreen(
     viewModel: InsightsViewModel = hiltViewModel(),
-    essentialsViewModel: EssentialsViewModel = hiltViewModel()
+    essentialsViewModel: EssentialsViewModel = hiltViewModel(),
+    performanceViewModel: PerformanceViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val insights by viewModel.insights.collectAsState()
@@ -39,11 +40,17 @@ fun MetricsScreen(
     val essentialsRefreshing by essentialsViewModel.isRefreshing.collectAsState()
     val essentialsError by essentialsViewModel.error.collectAsState()
 
+    val performance by performanceViewModel.performance.collectAsState()
+    val performanceLoading by performanceViewModel.isLoading.collectAsState()
+    val performanceRefreshing by performanceViewModel.isRefreshing.collectAsState()
+    val performanceError by performanceViewModel.error.collectAsState()
+
     PullToRefreshBox(
-        isRefreshing = isRefreshing || essentialsRefreshing,
+        isRefreshing = isRefreshing || essentialsRefreshing || performanceRefreshing,
         onRefresh = { 
             viewModel.refresh(isUserInitiated = true)
             essentialsViewModel.refresh(isUserInitiated = true)
+            performanceViewModel.refresh(isUserInitiated = true)
         },
         modifier = Modifier.fillMaxSize()
     ) {
@@ -64,7 +71,10 @@ fun MetricsScreen(
                 momentumTrendsLoading = momentumTrendsLoading,
                 essentialsResponse = essentials,
                 essentialsLoading = essentialsLoading,
-                essentialsError = essentialsError
+                essentialsError = essentialsError,
+                performanceResponse = performance,
+                performanceLoading = performanceLoading,
+                performanceError = performanceError
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
