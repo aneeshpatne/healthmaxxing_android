@@ -22,11 +22,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.style.TextAlign
+import com.aneesh.healthmaxxing.data.remote.PerformanceResponse
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +64,31 @@ private val AccentPurple = Color(0xFF6D5DF6)
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
+
+@Composable
+private fun PerformanceTextRemarkSection(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        HorizontalDivider(
+            color = CardBorder,
+            thickness = 1.dp
+        )
+
+        Text(
+            text = text,
+            color = TextSecondary,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.Normal,
+            style = compactTextStyle()
+        )
+    }
+}
 
 data class GaugeRange(
     val label: String,
@@ -383,77 +411,21 @@ fun FfmiGaugeComponent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Status Text
-            val rangeSpan = activeRange.max - activeRange.min
-            val positionInRange = clampedValue - activeRange.min
-            val progressInRange = positionInRange / rangeSpan
-            val nextRange = ranges.getOrNull(activeIndex + 1)
-            val prevRange = ranges.getOrNull(activeIndex - 1)
-
-            val statusText = if (progressInRange > 0.75f && nextRange != null) {
-                "You are in the upper range of ${activeRange.label}, approaching ${nextRange.label}."
-            } else if (progressInRange < 0.25f && prevRange != null) {
-                "You are in the lower range of ${activeRange.label}, just above ${prevRange.label}."
-            } else {
-                "You are solidly within the ${activeRange.label} range."
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(CardBorder)
+            PerformanceTextRemarkSection(
+                text = "FFMI highlights how much fat-free mass you carry for your height; higher values usually reflect stronger lean-mass development."
             )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(activeRange.legendBackgroundColor.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Status Info",
-                        tint = activeRange.legendTextColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = statusText,
-                        fontSize = 13.sp,
-                        lineHeight = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary,
-                        style = compactTextStyle()
-                    )
-                    Text(
-                        text = "Based on your height and body composition.",
-                        color = TextSecondary,
-                        fontSize = 12.sp,
-                        lineHeight = 15.sp,
-                        style = compactTextStyle()
-                    )
-                }
-            }
         }
     }
 }
-
 @Composable
-fun Performance(modifier: Modifier = Modifier) {
+fun Performance(
+    performanceResponse: PerformanceResponse? = null,
+    isLoading: Boolean = false,
+    error: String? = null,
+    modifier: Modifier = Modifier
+) {
     val dummyMeasurements = Measurements(
         id = "dummy",
         neckCm = 38.0,
@@ -471,17 +443,86 @@ fun Performance(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        FfmiGaugeComponent(value = 19.9f)
-        FfmiVsFmiChartComponent()
-        BodyCompositionSankeyComponent()
-        LeanFatTrendChartComponent()
-        RecompVectorPlotComponent()
-        ExcessFatGaugeComponent()
-        BodyMeasurementsPanel(measurements = dummyMeasurements)
-        BodyMeasurementRatiosPanel(
-            measurements = dummyMeasurements,
-            heightCm = 175.0
-        )
+        if (isLoading && performanceResponse == null) {
+            // We can add a shimmer here later, for now just a text
+            Text(
+                text = "Loading performance...",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                textAlign = TextAlign.Center
+            )
+        } else if (error != null && performanceResponse == null) {
+            Text(
+                text = error,
+                color = Color.Red,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                textAlign = TextAlign.Center
+            )
+        } else if (performanceResponse != null) {
+            val perf = performanceResponse.performance
+            FfmiGaugeComponent(value = perf.ffmi.toFloat())
+            
+            FfmiVsFmiChartComponent(
+                userPoint = BodyCompositionPoint(
+                    ffmi = perf.ffmiVsFmi.ffmi.toFloat(),
+                    fmi = perf.ffmiVsFmi.fmi.toFloat()
+                )
+            )
+
+            BodyCompositionSankeyComponent(
+                data = BodyComposition(
+                    totalWeight = (perf.bodyComposition.leanMassKg + perf.bodyComposition.fatMassKg).toFloat(),
+                    leanMass = perf.bodyComposition.leanMassKg.toFloat(),
+                    fatMass = perf.bodyComposition.fatMassKg.toFloat()
+                )
+            )
+
+            val trendPoints = perf.compositionTrends.leanMass30Days.zip(perf.compositionTrends.fatMass30Days).map { (lean, fat) ->
+                val dateStr = lean.createdAt.substringBefore(" ")
+                TrendDataPoint(
+                    month = dateStr.substringAfter("-"), 
+                    leanMass = lean.value.toFloat(), 
+                    fatMass = fat.value.toFloat()
+                )
+            }
+            if (trendPoints.isNotEmpty()) {
+                LeanFatTrendChartComponent(data = trendPoints)
+            } else {
+                LeanFatTrendChartComponent()
+            }
+
+            RecompVectorPlotComponent(
+                start = RecompPoint(
+                    fatMass = perf.weightPair.initial.fatMassKg.toFloat(),
+                    leanMass = perf.weightPair.initial.leanMassKg.toFloat()
+                ),
+                current = RecompPoint(
+                    fatMass = perf.weightPair.current.fatMassKg.toFloat(),
+                    leanMass = perf.weightPair.current.leanMassKg.toFloat()
+                ),
+                target = RecompPoint(
+                    fatMass = perf.weightPair.target.fatMassKg.toFloat(),
+                    leanMass = perf.weightPair.target.leanMassKg.toFloat()
+                )
+            )
+
+            ExcessFatGaugeComponent(
+                data = ExcessFatGaugeData(
+                    currentFatMassKg = perf.excessFatGauge.totalFatKg.toFloat(),
+                    targetFatMassKg = perf.excessFatGauge.targetFatKg.toFloat()
+                )
+            )
+
+            val measurementsToUse = perf.bodyMeasurements.firstOrNull() ?: dummyMeasurements
+            BodyMeasurementsPanel(measurements = measurementsToUse)
+            BodyMeasurementRatiosPanel(
+                measurements = measurementsToUse,
+                heightCm = 175.0 // Height is generally stored in metadata/essentials
+            )
+        }
     }
 }
 
@@ -860,6 +901,12 @@ fun FfmiVsFmiChartComponent(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PerformanceTextRemarkSection(
+                text = "The best zone combines higher FFMI with lower FMI, showing more lean tissue without carrying excess fat mass."
+            )
         }
     }
 }
@@ -1188,6 +1235,12 @@ fun BodyCompositionSankeyComponent(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PerformanceTextRemarkSection(
+                text = "This flow separates your scale weight into lean and fat mass so progress is judged by composition, not weight alone."
+            )
         }
     }
 }
@@ -1512,6 +1565,12 @@ fun LeanFatTrendChartComponent(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PerformanceTextRemarkSection(
+                text = "A strong trend shows lean mass moving up while fat mass moves down or stays controlled over the same period."
+            )
         }
     }
 }
@@ -2016,6 +2075,11 @@ fun RecompVectorPlotComponent(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PerformanceTextRemarkSection(
+                text = "The ideal recomp path moves left and upward: less fat mass with equal or greater lean mass."
+            )
         }
     }
 }
@@ -2240,6 +2304,12 @@ fun ExcessFatGaugeComponent(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            PerformanceTextRemarkSection(
+                text = "Excess fat is the gap between current fat mass and target fat mass; reducing it improves composition without guessing from body weight."
+            )
         }
     }
 }
