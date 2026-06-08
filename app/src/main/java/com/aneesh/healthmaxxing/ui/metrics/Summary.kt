@@ -75,7 +75,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -173,7 +172,10 @@ fun Summary(
 
         if (essentials != null) {
             SummaryHeader(dateString = essentials.measurements.createdAt)
-            FormaScoreCard(score = essentials.formaScore.score, status = essentials.formaScore.remark)
+            FormaScoreCard(
+                score = essentials.formaScore.score,
+                status = essentials.formaScore.remark
+            )
 
             BodyAgeHealthScoreCard(
                 model = BodyAgeComparisonUiModel(
@@ -190,7 +192,10 @@ fun Summary(
                 averageWeight = essentials.averageWeight30d.toFloat(),
                 lowestWeight = essentials.lowestWeight30d.toFloat(),
                 weights = if (essentials.last30DaysWeightTrend.isEmpty()) defaultWeightDataKg else essentials.last30DaysWeightTrend.map { it.weight.toFloat() },
-                dateLabel = formatDateTime(essentials.last30DaysWeightTrend.lastOrNull()?.createdAt ?: essentials.measurements.createdAt)
+                dateLabel = formatDateTime(
+                    essentials.last30DaysWeightTrend.lastOrNull()?.createdAt
+                        ?: essentials.measurements.createdAt
+                )
             )
         }
     }
@@ -1242,13 +1247,12 @@ private fun TrendLineIcon(
 }
 
 
-
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
 
 @Composable
-private fun BodyMeasurementsPanel(
+fun BodyMeasurementsPanel(
     measurements: Measurements,
     modifier: Modifier = Modifier
 ) {
@@ -1612,7 +1616,11 @@ private fun BodyMeasurementsPanel(
             ) {
                 CompactMetricItem(
                     label = "Shoulder\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.shoulderCm / measurements.waistCm) else "-",
+                    value = if (measurements.waistCm > 0) String.format(
+                        java.util.Locale.US,
+                        "%.2f",
+                        measurements.shoulderCm / measurements.waistCm
+                    ) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1624,7 +1632,11 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Chest\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.chestCm / measurements.waistCm) else "-",
+                    value = if (measurements.waistCm > 0) String.format(
+                        java.util.Locale.US,
+                        "%.2f",
+                        measurements.chestCm / measurements.waistCm
+                    ) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1636,7 +1648,11 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Bicep\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.bicepCm / measurements.waistCm) else "-",
+                    value = if (measurements.waistCm > 0) String.format(
+                        java.util.Locale.US,
+                        "%.2f",
+                        measurements.bicepCm / measurements.waistCm
+                    ) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1648,7 +1664,11 @@ private fun BodyMeasurementsPanel(
                 )
                 CompactMetricItem(
                     label = "Thigh\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(java.util.Locale.US, "%.2f", measurements.thighCm / measurements.waistCm) else "-",
+                    value = if (measurements.waistCm > 0) String.format(
+                        java.util.Locale.US,
+                        "%.2f",
+                        measurements.thighCm / measurements.waistCm
+                    ) else "-",
                     unit = "",
                     modifier = Modifier.weight(1f)
                 )
@@ -1724,7 +1744,13 @@ fun WeightDashboard(
                     label = "Goal",
                     valueText = String.format(java.util.Locale.US, "%.1f", goalWeight),
                     unit = unit,
-                    caption = "${String.format(java.util.Locale.US, "%.1f", currentWeight - goalWeight)} left",
+                    caption = "${
+                        String.format(
+                            java.util.Locale.US,
+                            "%.1f",
+                            currentWeight - goalWeight
+                        )
+                    } left",
                     captionColor = Success,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1953,7 +1979,8 @@ private fun WeightTrendChart(
                 "Goal",
                 plotRight - 4.dp.toPx(),
                 goalY - 8.dp.toPx(),
-                android.graphics.Paint(textPaintGoal).apply { textAlign = android.graphics.Paint.Align.RIGHT }
+                android.graphics.Paint(textPaintGoal)
+                    .apply { textAlign = android.graphics.Paint.Align.RIGHT }
             )
         }
 
