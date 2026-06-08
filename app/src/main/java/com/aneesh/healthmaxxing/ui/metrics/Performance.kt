@@ -35,14 +35,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.data.remote.Measurements
@@ -123,7 +126,9 @@ fun FfmiGaugeComponent(
         )
     )
 
-    val activeIndex = ranges.indexOfFirst { clampedValue >= it.min && clampedValue <= it.max }.takeIf { it >= 0 } ?: 2
+    val activeIndex =
+        ranges.indexOfFirst { clampedValue >= it.min && clampedValue <= it.max }.takeIf { it >= 0 }
+            ?: 2
     val activeRange = ranges[activeIndex]
 
     val animationProgress = remember { Animatable(0f) }
@@ -223,8 +228,10 @@ fun FfmiGaugeComponent(
                         val isFirst = range == ranges.first()
                         val isLast = range == ranges.last()
 
-                        val actualStartAngle = segmentStartAngle + (if (isFirst) 0f else gapAngle / 2f)
-                        val actualSweepAngle = segmentSweepAngle - (if (isFirst || isLast) gapAngle / 2f else gapAngle)
+                        val actualStartAngle =
+                            segmentStartAngle + (if (isFirst) 0f else gapAngle / 2f)
+                        val actualSweepAngle =
+                            segmentSweepAngle - (if (isFirst || isLast) gapAngle / 2f else gapAngle)
 
                         drawArc(
                             brush = range.arcGradient,
@@ -238,7 +245,8 @@ fun FfmiGaugeComponent(
                     }
 
                     // Draw indicator thumb (animated)
-                    val progress = ((currentAnimatedValue - minValue) / (maxValue - minValue)).coerceIn(0f, 1f)
+                    val progress =
+                        ((currentAnimatedValue - minValue) / (maxValue - minValue)).coerceIn(0f, 1f)
                     val markerAngle = 180f + progress * 180f
                     val angleRad = Math.toRadians(markerAngle.toDouble())
 
@@ -254,7 +262,12 @@ fun FfmiGaugeComponent(
                             thumbRadius,
                             android.graphics.Paint().apply {
                                 color = android.graphics.Color.WHITE
-                                setShadowLayer(16f, 0f, 8f, android.graphics.Color.argb(40, 0, 0, 0))
+                                setShadowLayer(
+                                    16f,
+                                    0f,
+                                    8f,
+                                    android.graphics.Color.argb(40, 0, 0, 0)
+                                )
                             }
                         )
                     }
@@ -265,7 +278,7 @@ fun FfmiGaugeComponent(
                         radius = thumbRadius,
                         center = Offset(thumbX, thumbY)
                     )
-                    
+
                     // Thumb Inner Circle (Color matching active range)
                     drawCircle(
                         color = activeRange.arcColor,
@@ -292,7 +305,10 @@ fun FfmiGaugeComponent(
                                 textSize = 10.sp.toPx()
                                 textAlign = android.graphics.Paint.Align.CENTER
                                 isAntiAlias = true
-                                typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                                typeface = android.graphics.Typeface.create(
+                                    android.graphics.Typeface.DEFAULT,
+                                    android.graphics.Typeface.BOLD
+                                )
                             }
                         )
                     }
@@ -341,7 +357,11 @@ fun FfmiGaugeComponent(
                                 .height(6.dp)
                                 .fillMaxWidth(0.8f)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(if (isActive) range.arcGradient else Brush.linearGradient(listOf(Color(0xFFF1F5F9), Color(0xFFF1F5F9))))
+                                .background(
+                                    if (isActive) range.arcGradient else Brush.linearGradient(
+                                        listOf(Color(0xFFF1F5F9), Color(0xFFF1F5F9))
+                                    )
+                                )
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -453,7 +473,15 @@ fun Performance(modifier: Modifier = Modifier) {
     ) {
         FfmiGaugeComponent(value = 19.9f)
         FfmiVsFmiChartComponent()
+        BodyCompositionSankeyComponent()
+        LeanFatTrendChartComponent()
+        RecompVectorPlotComponent()
+        ExcessFatGaugeComponent()
         BodyMeasurementsPanel(measurements = dummyMeasurements)
+        BodyMeasurementRatiosPanel(
+            measurements = dummyMeasurements,
+            heightCm = 175.0
+        )
     }
 }
 
@@ -549,7 +577,7 @@ fun FfmiVsFmiChartComponent(
 
                     val divX = getX(thresholdX)
                     val divY = getY(thresholdY)
-                    
+
                     val cornerRadius = 16.dp.toPx()
 
                     // Draw Chart Background
@@ -557,7 +585,10 @@ fun FfmiVsFmiChartComponent(
                         color = Color(0xFFF8FAFC),
                         topLeft = Offset(paddingLeft, paddingTop),
                         size = Size(chartWidth, chartHeight),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius, cornerRadius)
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                            cornerRadius,
+                            cornerRadius
+                        )
                     )
 
                     // Draw Quadrants (with clipping so they stay inside the rounded rect)
@@ -565,15 +596,21 @@ fun FfmiVsFmiChartComponent(
                         addRoundRect(
                             androidx.compose.ui.geometry.RoundRect(
                                 rect = androidx.compose.ui.geometry.Rect(
-                                    paddingLeft, paddingTop, paddingLeft + chartWidth, paddingTop + chartHeight
+                                    paddingLeft,
+                                    paddingTop,
+                                    paddingLeft + chartWidth,
+                                    paddingTop + chartHeight
                                 ),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius, cornerRadius)
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                                    cornerRadius,
+                                    cornerRadius
+                                )
                             )
                         )
                     }
                     drawContext.canvas.save()
                     drawContext.canvas.clipPath(clipPath)
-                    
+
                     // Top Left (Skinny Fat)
                     drawRect(
                         color = Color(0xFFFFF1F2), // Red tint
@@ -596,11 +633,19 @@ fun FfmiVsFmiChartComponent(
                     drawRect(
                         color = Color(0xFFEFF6FF), // Blue tint
                         topLeft = Offset(divX, divY),
-                        size = Size(paddingLeft + chartWidth - divX, paddingTop + chartHeight - divY)
+                        size = Size(
+                            paddingLeft + chartWidth - divX,
+                            paddingTop + chartHeight - divY
+                        )
                     )
 
                     // Draw Divider Lines
-                    val dashPathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(15f, 15f), 0f)
+                    val dashPathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                        floatArrayOf(
+                            15f,
+                            15f
+                        ), 0f
+                    )
                     drawLine(
                         color = Color(0x22000000),
                         start = Offset(divX, paddingTop),
@@ -622,7 +667,10 @@ fun FfmiVsFmiChartComponent(
                         color = Color(0xFFE2E8F0),
                         topLeft = Offset(paddingLeft, paddingTop),
                         size = Size(chartWidth, chartHeight),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius, cornerRadius),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                            cornerRadius,
+                            cornerRadius
+                        ),
                         style = Stroke(width = 1.dp.toPx())
                     )
 
@@ -632,7 +680,10 @@ fun FfmiVsFmiChartComponent(
                         textSize = 10.sp.toPx()
                         isAntiAlias = true
                         textAlign = android.graphics.Paint.Align.CENTER
-                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                        typeface = android.graphics.Typeface.create(
+                            android.graphics.Typeface.DEFAULT,
+                            android.graphics.Typeface.BOLD
+                        )
                     }
 
                     // X-axis
@@ -658,23 +709,69 @@ fun FfmiVsFmiChartComponent(
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
 
-                    fun drawQuadLabel(title: String, subtitle: String, cx: Float, cy: Float, colorStr: String) {
+                    fun drawQuadLabel(
+                        title: String,
+                        subtitle: String,
+                        cx: Float,
+                        cy: Float,
+                        colorStr: String
+                    ) {
                         quadLabelPaint.color = android.graphics.Color.parseColor(colorStr)
-                        
+
                         quadLabelPaint.textSize = 13.sp.toPx()
-                        quadLabelPaint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-                        drawContext.canvas.nativeCanvas.drawText(title, cx, cy - 4.dp.toPx(), quadLabelPaint)
+                        quadLabelPaint.typeface = android.graphics.Typeface.create(
+                            android.graphics.Typeface.DEFAULT,
+                            android.graphics.Typeface.BOLD
+                        )
+                        drawContext.canvas.nativeCanvas.drawText(
+                            title,
+                            cx,
+                            cy - 4.dp.toPx(),
+                            quadLabelPaint
+                        )
 
                         quadLabelPaint.color = TextSecondary.copy(alpha = 0.8f).toArgb()
                         quadLabelPaint.textSize = 9.sp.toPx()
-                        quadLabelPaint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
-                        drawContext.canvas.nativeCanvas.drawText(subtitle, cx, cy + 12.dp.toPx(), quadLabelPaint)
+                        quadLabelPaint.typeface = android.graphics.Typeface.create(
+                            android.graphics.Typeface.DEFAULT,
+                            android.graphics.Typeface.NORMAL
+                        )
+                        drawContext.canvas.nativeCanvas.drawText(
+                            subtitle,
+                            cx,
+                            cy + 12.dp.toPx(),
+                            quadLabelPaint
+                        )
                     }
 
-                    drawQuadLabel("Skinny Fat", "High Fat • Low Muscle", paddingLeft + (divX - paddingLeft)/2f, paddingTop + (divY - paddingTop)/2f, "#E11D48")
-                    drawQuadLabel("Big & Muscular", "High Fat • High Muscle", divX + (paddingLeft + chartWidth - divX)/2f, paddingTop + (divY - paddingTop)/2f, "#EA580C")
-                    drawQuadLabel("Lean", "Low Fat • Low Muscle", paddingLeft + (divX - paddingLeft)/2f, divY + (paddingTop + chartHeight - divY)/2f, "#16A34A")
-                    drawQuadLabel("Athletic", "Low Fat • High Muscle", divX + (paddingLeft + chartWidth - divX)/2f, divY + (paddingTop + chartHeight - divY)/2f, "#2563EB")
+                    drawQuadLabel(
+                        "Skinny Fat",
+                        "High Fat • Low Muscle",
+                        paddingLeft + (divX - paddingLeft) / 2f,
+                        paddingTop + (divY - paddingTop) / 2f,
+                        "#E11D48"
+                    )
+                    drawQuadLabel(
+                        "Big & Muscular",
+                        "High Fat • High Muscle",
+                        divX + (paddingLeft + chartWidth - divX) / 2f,
+                        paddingTop + (divY - paddingTop) / 2f,
+                        "#EA580C"
+                    )
+                    drawQuadLabel(
+                        "Lean",
+                        "Low Fat • Low Muscle",
+                        paddingLeft + (divX - paddingLeft) / 2f,
+                        divY + (paddingTop + chartHeight - divY) / 2f,
+                        "#16A34A"
+                    )
+                    drawQuadLabel(
+                        "Athletic",
+                        "Low Fat • High Muscle",
+                        divX + (paddingLeft + chartWidth - divX) / 2f,
+                        divY + (paddingTop + chartHeight - divY) / 2f,
+                        "#2563EB"
+                    )
 
                     // X-axis title
                     val titlePaint = android.graphics.Paint().apply {
@@ -682,13 +779,24 @@ fun FfmiVsFmiChartComponent(
                         textSize = 11.sp.toPx()
                         isAntiAlias = true
                         textAlign = android.graphics.Paint.Align.CENTER
-                        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+                        typeface = android.graphics.Typeface.create(
+                            android.graphics.Typeface.DEFAULT,
+                            android.graphics.Typeface.BOLD
+                        )
                     }
-                    drawContext.canvas.nativeCanvas.drawText("FFMI (Muscle Mass)", paddingLeft + chartWidth/2f, canvasHeight - 4.dp.toPx(), titlePaint)
+                    drawContext.canvas.nativeCanvas.drawText(
+                        "FFMI (Muscle Mass)",
+                        paddingLeft + chartWidth / 2f,
+                        canvasHeight - 4.dp.toPx(),
+                        titlePaint
+                    )
 
                     // Y-axis title
                     drawContext.canvas.nativeCanvas.save()
-                    drawContext.canvas.nativeCanvas.translate(12.dp.toPx(), paddingTop + chartHeight/2f)
+                    drawContext.canvas.nativeCanvas.translate(
+                        12.dp.toPx(),
+                        paddingTop + chartHeight / 2f
+                    )
                     drawContext.canvas.nativeCanvas.rotate(-90f)
                     drawContext.canvas.nativeCanvas.drawText("FMI (Fat Mass)", 0f, 0f, titlePaint)
                     drawContext.canvas.nativeCanvas.restore()
@@ -705,7 +813,12 @@ fun FfmiVsFmiChartComponent(
                             radius,
                             android.graphics.Paint().apply {
                                 color = AccentPurple.toArgb()
-                                setShadowLayer(12f, 0f, 6f, android.graphics.Color.argb(80, 109, 93, 246))
+                                setShadowLayer(
+                                    12f,
+                                    0f,
+                                    6f,
+                                    android.graphics.Color.argb(80, 109, 93, 246)
+                                )
                                 isAntiAlias = true
                             }
                         )
@@ -728,7 +841,10 @@ fun FfmiVsFmiChartComponent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // User Marker
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(12.dp)
@@ -745,5 +861,1431 @@ fun FfmiVsFmiChartComponent(
                 }
             }
         }
+    }
+}
+
+data class BodyComposition(
+    val totalWeight: Float,
+    val leanMass: Float,
+    val fatMass: Float
+)
+
+@Composable
+fun BodyCompositionSankeyComponent(
+    data: BodyComposition = BodyComposition(
+        totalWeight = 77.25f,
+        leanMass = 58.86f,
+        fatMass = 18.39f
+    ),
+    modifier: Modifier = Modifier
+) {
+    val leanPct = data.leanMass / data.totalWeight
+    val fatPct = data.fatMass / data.totalWeight
+
+    // Animations
+    val ribbonProgress = remember { Animatable(0f) }
+    val destinationAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(data) {
+        ribbonProgress.snapTo(0f)
+        destinationAlpha.snapTo(0f)
+        ribbonProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+        )
+        destinationAlpha.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = Color.Black.copy(alpha = 0.03f),
+                spotColor = Color.Black.copy(alpha = 0.03f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(CardBackground)
+            .border(
+                width = 1.dp,
+                color = CardBorder,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "BODY COMPOSITION FLOW",
+                    color = AccentPurple,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.5.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Visualize the breakdown of your total body weight into lean mass and fat mass.",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Sankey Diagram Area
+            val containerHeight = 160.dp
+            val leftWidth = 100.dp
+            val leftHeight = 80.dp
+            val rightWidth = 110.dp
+            val rightHeight = 65.dp
+            val rightGap = 12.dp
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(containerHeight)
+            ) {
+                // Canvas for Flow Ribbons
+                Canvas(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val w = size.width
+                    val h = size.height
+
+                    val leftWidthPx = leftWidth.toPx()
+                    val leftHeightPx = leftHeight.toPx()
+                    val rightWidthPx = rightWidth.toPx()
+                    val rightHeightPx = rightHeight.toPx()
+                    val rightGapPx = rightGap.toPx()
+
+                    val overlap = 16.dp.toPx()
+                    val xStart = leftWidthPx - overlap
+                    val xEnd = w - rightWidthPx + overlap
+                    val dx = xEnd - xStart
+
+                    val yLeftTop = (h - leftHeightPx) / 2f
+                    val yLeftBottom = yLeftTop + leftHeightPx
+
+                    val yLeanTop = (h - (rightHeightPx * 2 + rightGapPx)) / 2f
+                    val yLeanBottom = yLeanTop + rightHeightPx
+
+                    val yFatTop = yLeanBottom + rightGapPx
+                    val yFatBottom = yFatTop + rightHeightPx
+
+                    // Ribbon split at source node
+                    val splitY = yLeftTop + leftHeightPx * leanPct
+
+                    // Drawing with horizontal clip progress
+                    clipRect(
+                        right = xStart + dx * ribbonProgress.value
+                    ) {
+                        // 1. Lean Flow Ribbon
+                        val leanPath = Path().apply {
+                            moveTo(xStart, yLeftTop)
+                            cubicTo(
+                                x1 = xStart + dx / 2f, y1 = yLeftTop,
+                                x2 = xStart + dx / 2f, y2 = yLeanTop,
+                                x3 = xEnd, y3 = yLeanTop
+                            )
+                            lineTo(xEnd, yLeanBottom)
+                            cubicTo(
+                                x1 = xStart + dx / 2f, y1 = yLeanBottom,
+                                x2 = xStart + dx / 2f, y2 = splitY,
+                                x3 = xStart, y3 = splitY
+                            )
+                            close()
+                        }
+                        drawPath(
+                            path = leanPath,
+                            color = Color(0xFFCDEFD9).copy(alpha = 0.7f)
+                        )
+
+                        // 2. Fat Flow Ribbon
+                        val fatPath = Path().apply {
+                            moveTo(xStart, splitY)
+                            cubicTo(
+                                x1 = xStart + dx / 2f, y1 = splitY,
+                                x2 = xStart + dx / 2f, y2 = yFatTop,
+                                x3 = xEnd, y3 = yFatTop
+                            )
+                            lineTo(xEnd, yFatBottom)
+                            cubicTo(
+                                x1 = xStart + dx / 2f, y1 = yFatBottom,
+                                x2 = xStart + dx / 2f, y2 = yLeftBottom,
+                                x3 = xStart, y3 = yLeftBottom
+                            )
+                            close()
+                        }
+                        drawPath(
+                            path = fatPath,
+                            color = Color(0xFFFFD5DC).copy(alpha = 0.7f)
+                        )
+                    }
+                }
+
+                // Left Source Node (Total Weight)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(leftWidth, leftHeight)
+                        .shadow(
+                            elevation = 2.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            ambientColor = AccentPurple.copy(alpha = 0.05f),
+                            spotColor = AccentPurple.copy(alpha = 0.05f)
+                        )
+                        .background(
+                            color = Color(0xFFF3EEFF),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFFDCD2FE),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Total Weight",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextSecondary,
+                            style = compactTextStyle()
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "%.2f kg".format(data.totalWeight),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF6338CE),
+                            style = compactTextStyle()
+                        )
+                    }
+                }
+
+                // Right Destination Nodes Column
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(rightWidth),
+                    verticalArrangement = Arrangement.spacedBy(rightGap),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Lean Mass Node
+                    Box(
+                        modifier = Modifier
+                            .size(rightWidth, rightHeight)
+                            .graphicsLayer(alpha = destinationAlpha.value)
+                            .shadow(
+                                elevation = 2.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                ambientColor = Color(0xFF45A96B).copy(alpha = 0.05f),
+                                spotColor = Color(0xFF45A96B).copy(alpha = 0.05f)
+                            )
+                            .background(
+                                color = Color(0xFFEFFFF4),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFCDEFD9),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "Lean Mass",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextSecondary,
+                                style = compactTextStyle()
+                            )
+                            Text(
+                                text = "%.2f kg".format(data.leanMass),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF2E8550),
+                                style = compactTextStyle()
+                            )
+                            Text(
+                                text = "(%.1f%%)".format(leanPct * 100f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextSecondary,
+                                style = compactTextStyle()
+                            )
+                        }
+                    }
+
+                    // Fat Mass Node
+                    Box(
+                        modifier = Modifier
+                            .size(rightWidth, rightHeight)
+                            .graphicsLayer(alpha = destinationAlpha.value)
+                            .shadow(
+                                elevation = 2.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                ambientColor = Color(0xFFFF5A6A).copy(alpha = 0.05f),
+                                spotColor = Color(0xFFFF5A6A).copy(alpha = 0.05f)
+                            )
+                            .background(
+                                color = Color(0xFFFFF0F2),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFFFD5DC),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "Fat Mass",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextSecondary,
+                                style = compactTextStyle()
+                            )
+                            Text(
+                                text = "%.2f kg".format(data.fatMass),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFE03144),
+                                style = compactTextStyle()
+                            )
+                            Text(
+                                text = "(%.1f%%)".format(fatPct * 100f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextSecondary,
+                                style = compactTextStyle()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+data class TrendDataPoint(val month: String, val leanMass: Float, val fatMass: Float)
+
+@Composable
+fun LeanFatTrendChartComponent(
+    data: List<TrendDataPoint> = listOf(
+        TrendDataPoint("Jan", 56.5f, 20.1f),
+        TrendDataPoint("Feb", 57.0f, 19.8f),
+        TrendDataPoint("Mar", 57.5f, 19.2f),
+        TrendDataPoint("Apr", 58.0f, 18.9f),
+        TrendDataPoint("May", 58.4f, 18.5f),
+        TrendDataPoint("Jun", 58.86f, 18.39f)
+    ),
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = Color.Black.copy(alpha = 0.03f),
+                spotColor = Color.Black.copy(alpha = 0.03f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(CardBackground)
+            .border(
+                width = 1.dp,
+                color = CardBorder,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "COMPOSITION TRENDS",
+                    color = AccentPurple,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.5.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Track how your lean mass and fat mass have changed over time.",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Legend
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF45A96B))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "Lean Mass",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFF5A6A))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "Fat Mass",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary
+                    )
+                }
+            }
+
+            // Chart
+            val containerHeight = 180.dp
+            val animationProgress = remember { Animatable(0f) }
+            LaunchedEffect(data) {
+                animationProgress.animateTo(
+                    1f,
+                    animationSpec = tween(1200, easing = FastOutSlowInEasing)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(containerHeight)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+
+                    val leftPaddingPx = 34.dp.toPx()
+                    val rightPaddingPx = 16.dp.toPx()
+                    val topPaddingPx = 10.dp.toPx()
+                    val bottomPaddingPx = 24.dp.toPx()
+
+                    val plotLeft = leftPaddingPx
+                    val plotRight = w - rightPaddingPx
+                    val plotTop = topPaddingPx
+                    val plotBottom = h - bottomPaddingPx
+
+                    val plotWidth = plotRight - plotLeft
+                    val plotHeight = plotBottom - plotTop
+
+                    val maxLean = data.maxOf { it.leanMass }
+                    val yMax = ((maxLean / 20).toInt() + 1) * 20f
+                    val yMin = 0f
+
+                    val dx = plotWidth / (data.size - 1).coerceAtLeast(1)
+
+                    fun getY(value: Float): Float {
+                        val fraction = ((value - yMin) / (yMax - yMin)).coerceIn(0f, 1f)
+                        return plotBottom - fraction * plotHeight
+                    }
+
+                    // Grid lines and Y labels
+                    val textPaint = Paint().apply {
+                        color = android.graphics.Color.parseColor("#64748B") // TextSecondary
+                        textSize = 10.sp.toPx()
+                        textAlign = Paint.Align.RIGHT
+                        isAntiAlias = true
+                    }
+
+                    val lines = 4
+                    for (i in 0..lines) {
+                        val fraction = i.toFloat() / lines
+                        val y = plotBottom - fraction * plotHeight
+                        val value = yMin + fraction * (yMax - yMin)
+
+                        drawLine(
+                            color = Color(0xFFE6EEF2), // CardBorder
+                            start = Offset(plotLeft, y),
+                            end = Offset(plotRight, y),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                                floatArrayOf(8f, 8f),
+                                0f
+                            )
+                        )
+
+                        val textHeight =
+                            textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
+                        drawContext.canvas.nativeCanvas.drawText(
+                            value.toInt().toString(),
+                            plotLeft - 8.dp.toPx(),
+                            y + textHeight / 3f,
+                            textPaint
+                        )
+                    }
+
+                    val leanPath = Path()
+                    val fatPath = Path()
+                    val pointsLean = mutableListOf<Offset>()
+                    val pointsFat = mutableListOf<Offset>()
+
+                    data.forEachIndexed { index, point ->
+                        val x = plotLeft + index * dx
+                        pointsLean.add(Offset(x, getY(point.leanMass)))
+                        pointsFat.add(Offset(x, getY(point.fatMass)))
+                    }
+
+                    fun smoothPath(points: List<Offset>, path: Path) {
+                        if (points.isEmpty()) return
+                        path.moveTo(points.first().x, points.first().y)
+                        for (i in 0 until points.lastIndex) {
+                            val p0 = points.getOrElse(i - 1) { points[i] }
+                            val p1 = points[i]
+                            val p2 = points[i + 1]
+                            val p3 = points.getOrElse(i + 2) { p2 }
+
+                            val control1 = Offset(
+                                x = p1.x + (p2.x - p0.x) / 6f,
+                                y = (p1.y + (p2.y - p0.y) / 6f).coerceIn(plotTop, plotBottom)
+                            )
+                            val control2 = Offset(
+                                x = p2.x - (p3.x - p1.x) / 6f,
+                                y = (p2.y - (p3.y - p1.y) / 6f).coerceIn(plotTop, plotBottom)
+                            )
+                            path.cubicTo(control1.x, control1.y, control2.x, control2.y, p2.x, p2.y)
+                        }
+                    }
+
+                    smoothPath(pointsLean, leanPath)
+                    smoothPath(pointsFat, fatPath)
+
+                    val leanFillPath = Path().apply {
+                        addPath(leanPath)
+                        if (pointsLean.isNotEmpty()) {
+                            lineTo(pointsLean.last().x, plotBottom)
+                            lineTo(pointsLean.first().x, plotBottom)
+                            close()
+                        }
+                    }
+                    val fatFillPath = Path().apply {
+                        addPath(fatPath)
+                        if (pointsFat.isNotEmpty()) {
+                            lineTo(pointsFat.last().x, plotBottom)
+                            lineTo(pointsFat.first().x, plotBottom)
+                            close()
+                        }
+                    }
+
+                    clipRect(right = plotLeft + (plotWidth + 16.dp.toPx()) * animationProgress.value) {
+                        // Fills
+                        drawPath(path = leanFillPath, color = Color(0xFF45A96B).copy(alpha = 0.10f))
+                        drawPath(path = fatFillPath, color = Color(0xFFFF5A6A).copy(alpha = 0.10f))
+
+                        // Lines
+                        drawPath(
+                            path = leanPath,
+                            color = Color(0xFF45A96B),
+                            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                        drawPath(
+                            path = fatPath,
+                            color = Color(0xFFFF5A6A),
+                            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                        )
+
+                        // Small dots
+                        val radiusPx = 1.75.dp.toPx()
+                        pointsLean.forEach {
+                            drawCircle(
+                                color = Color(0xFF45A96B).copy(alpha = 0.45f),
+                                radius = radiusPx,
+                                center = it
+                            )
+                        }
+                        pointsFat.forEach {
+                            drawCircle(
+                                color = Color(0xFFFF5A6A).copy(alpha = 0.45f),
+                                radius = radiusPx,
+                                center = it
+                            )
+                        }
+
+                        // Vertical guide line for the last point
+                        if (pointsLean.isNotEmpty()) {
+                            val finalX = pointsLean.last().x
+                            drawLine(
+                                color = Color(0xFFE6EEF2),
+                                start = Offset(finalX, plotTop),
+                                end = Offset(finalX, plotBottom),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                                    floatArrayOf(6f, 6f),
+                                    0f
+                                )
+                            )
+
+                            // Large final dots
+                            drawCircle(
+                                color = Color(0xFF45A96B),
+                                radius = 5.dp.toPx(),
+                                center = pointsLean.last()
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 3.dp.toPx(),
+                                center = pointsLean.last()
+                            )
+
+                            drawCircle(
+                                color = Color(0xFFFF5A6A),
+                                radius = 5.dp.toPx(),
+                                center = pointsFat.last()
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 3.dp.toPx(),
+                                center = pointsFat.last()
+                            )
+                        }
+                    }
+
+                    // X-axis labels
+                    val xTextPaint = Paint().apply {
+                        color = android.graphics.Color.parseColor("#64748B")
+                        textSize = 10.sp.toPx()
+                        textAlign = Paint.Align.CENTER
+                        isAntiAlias = true
+                    }
+                    data.forEachIndexed { index, point ->
+                        val x = plotLeft + index * dx
+                        drawContext.canvas.nativeCanvas.drawText(
+                            point.month,
+                            x,
+                            h - 2.dp.toPx(), // bottom edge
+                            xTextPaint
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+data class RecompPoint(val fatMass: Float, val leanMass: Float)
+
+enum class ArrowDirection {
+    DIAGONAL_UP_LEFT,
+    HORIZONTAL_LEFT,
+    VERTICAL_UP
+}
+
+@Composable
+fun LegendRow(
+    label: String,
+    arrowColor: Color,
+    isDashed: Boolean,
+    direction: ArrowDirection,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.padding(vertical = 4.dp)
+    ) {
+        Canvas(
+            modifier = Modifier
+                .width(40.dp)
+                .height(16.dp)
+        ) {
+            val w = size.width
+            val h = size.height
+            val start: Offset
+            val end: Offset
+            when (direction) {
+                ArrowDirection.DIAGONAL_UP_LEFT -> {
+                    start = Offset(w - 6.dp.toPx(), h - 4.dp.toPx())
+                    end = Offset(6.dp.toPx(), 4.dp.toPx())
+                }
+
+                ArrowDirection.HORIZONTAL_LEFT -> {
+                    start = Offset(w - 6.dp.toPx(), h / 2f)
+                    end = Offset(6.dp.toPx(), h / 2f)
+                }
+
+                ArrowDirection.VERTICAL_UP -> {
+                    start = Offset(w / 2f, h - 3.dp.toPx())
+                    end = Offset(w / 2f, 3.dp.toPx())
+                }
+            }
+
+            val dx = end.x - start.x
+            val dy = end.y - start.y
+            val len = kotlin.math.hypot(dx, dy)
+            val strokeWidth = if (isDashed) 1.5.dp.toPx() else 2.dp.toPx()
+
+            if (len > 0) {
+                val uX = dx / len
+                val uY = dy / len
+
+                drawLine(
+                    color = arrowColor,
+                    start = start,
+                    end = end,
+                    strokeWidth = strokeWidth,
+                    pathEffect = if (isDashed) androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                        floatArrayOf(6f, 4f),
+                        0f
+                    ) else null
+                )
+
+                val arrowheadSizePx = 5.dp.toPx()
+                val angle = kotlin.math.atan2(dy, dx)
+                val arrowAngle = Math.PI / 6
+                val x1 = end.x - arrowheadSizePx * kotlin.math.cos(angle - arrowAngle).toFloat()
+                val y1 = end.y - arrowheadSizePx * kotlin.math.sin(angle - arrowAngle).toFloat()
+                val x2 = end.x - arrowheadSizePx * kotlin.math.cos(angle + arrowAngle).toFloat()
+                val y2 = end.y - arrowheadSizePx * kotlin.math.sin(angle + arrowAngle).toFloat()
+
+                val path = Path().apply {
+                    moveTo(end.x, end.y)
+                    lineTo(x1, y1)
+                    lineTo(x2, y2)
+                    close()
+                }
+                drawPath(path = path, color = arrowColor)
+            }
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Normal,
+            color = Color(0xFF111111),
+            style = compactTextStyle()
+        )
+    }
+}
+
+private fun DrawScope.drawAnimatedArrow(
+    start: Offset,
+    end: Offset,
+    color: Color,
+    strokeWidth: Float,
+    isDashed: Boolean,
+    arrowheadSizePx: Float,
+    endOffsetPx: Float,
+    progress: Float
+) {
+    val dx = end.x - start.x
+    val dy = end.y - start.y
+    val len = kotlin.math.hypot(dx, dy)
+    if (len > 0) {
+        val uX = dx / len
+        val uY = dy / len
+        val adjustedStart = Offset(start.x + uX * endOffsetPx, start.y + uY * endOffsetPx)
+        val adjustedEnd = Offset(end.x - uX * endOffsetPx, end.y - uY * endOffsetPx)
+
+        val animatedEnd = Offset(
+            adjustedStart.x + (adjustedEnd.x - adjustedStart.x) * progress,
+            adjustedStart.y + (adjustedEnd.y - adjustedStart.y) * progress
+        )
+
+        drawLine(
+            color = color,
+            start = adjustedStart,
+            end = animatedEnd,
+            strokeWidth = strokeWidth,
+            pathEffect = if (isDashed) androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                floatArrayOf(8f, 6f),
+                0f
+            ) else null,
+            alpha = progress
+        )
+
+        val angle = kotlin.math.atan2(dy, dx)
+        val arrowAngle = Math.PI / 6
+
+        val x1 = animatedEnd.x - arrowheadSizePx * kotlin.math.cos(angle - arrowAngle).toFloat()
+        val y1 = animatedEnd.y - arrowheadSizePx * kotlin.math.sin(angle - arrowAngle).toFloat()
+
+        val x2 = animatedEnd.x - arrowheadSizePx * kotlin.math.cos(angle + arrowAngle).toFloat()
+        val y2 = animatedEnd.y - arrowheadSizePx * kotlin.math.sin(angle + arrowAngle).toFloat()
+
+        val path = Path().apply {
+            moveTo(animatedEnd.x, animatedEnd.y)
+            lineTo(x1, y1)
+            lineTo(x2, y2)
+            close()
+        }
+        drawPath(path = path, color = color, alpha = progress)
+    }
+}
+
+@Composable
+fun RecompVectorPlotComponent(
+    start: RecompPoint = RecompPoint(20.50f, 57.50f),
+    current: RecompPoint = RecompPoint(18.39f, 58.86f),
+    target: RecompPoint = RecompPoint(12.92f, 58.86f),
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = Color.Black.copy(alpha = 0.03f),
+                spotColor = Color.Black.copy(alpha = 0.03f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(CardBackground)
+            .border(
+                width = 1.dp,
+                color = CardBorder,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Header
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "RECOMP VECTOR PLOT",
+                    color = AccentPurple,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.5.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Track your body composition journey across four distinct zones.",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Animation progress
+            val animationProgress = remember { Animatable(0f) }
+            LaunchedEffect(Unit) {
+                animationProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing)
+                )
+            }
+
+            val containerHeight = 320.dp
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(containerHeight)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+
+                    val leftPaddingPx = 44.dp.toPx()
+                    val rightPaddingPx = 16.dp.toPx()
+                    val topPaddingPx = 16.dp.toPx()
+                    val bottomPaddingPx = 44.dp.toPx()
+
+                    val plotLeft = leftPaddingPx
+                    val plotRight = w - rightPaddingPx
+                    val plotTop = topPaddingPx
+                    val plotBottom = h - bottomPaddingPx
+
+                    val plotWidth = plotRight - plotLeft
+                    val plotHeight = plotBottom - plotTop
+
+                    val cornerRadius = 16.dp.toPx()
+
+                    // Fixed ranges (padded to keep points away from edges)
+                    val minX = 10f
+                    val maxX = 22f
+                    val minY = 56f
+                    val maxY = 62f
+
+                    fun getScreenX(fat: Float): Float {
+                        val xRatio = (fat - minX) / (maxX - minX)
+                        return plotLeft + xRatio * plotWidth
+                    }
+
+                    fun getScreenY(lean: Float): Float {
+                        val yRatio = (lean - minY) / (maxY - minY)
+                        return plotBottom - yRatio * plotHeight
+                    }
+
+                    val currentX = getScreenX(current.fatMass)
+                    val currentY = getScreenY(current.leanMass)
+
+                    // Draw Chart Background
+                    drawRoundRect(
+                        color = Color(0xFFF8FAFC),
+                        topLeft = Offset(plotLeft, plotTop),
+                        size = Size(plotWidth, plotHeight),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                            cornerRadius,
+                            cornerRadius
+                        )
+                    )
+
+                    // Draw Grid Lines
+                    val gridPathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                        floatArrayOf(
+                            10f,
+                            10f
+                        ), 0f
+                    )
+                    val xTicksForGrid = listOf(10, 13, 16, 19, 22)
+                    xTicksForGrid.forEach { tick ->
+                        val x = getScreenX(tick.toFloat())
+                        drawLine(
+                            color = Color(0x11000000),
+                            start = Offset(x, plotTop),
+                            end = Offset(x, plotBottom),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = gridPathEffect
+                        )
+                    }
+                    val yTicksForGrid = listOf(56, 57, 58, 59, 60, 61, 62)
+                    yTicksForGrid.forEach { tick ->
+                        val y = getScreenY(tick.toFloat())
+                        drawLine(
+                            color = Color(0x11000000),
+                            start = Offset(plotLeft, y),
+                            end = Offset(plotRight, y),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = gridPathEffect
+                        )
+                    }
+
+                    // Chart Border
+                    drawRoundRect(
+                        color = Color(0xFFE2E8F0),
+                        topLeft = Offset(plotLeft, plotTop),
+                        size = Size(plotWidth, plotHeight),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                            cornerRadius,
+                            cornerRadius
+                        ),
+                        style = Stroke(width = 1.dp.toPx())
+                    )
+
+                    // Text Paints
+                    val titlePaint = android.graphics.Paint().apply {
+                        color = TextSecondary.toArgb()
+                        textSize = 11.sp.toPx()
+                        typeface = android.graphics.Typeface.create(
+                            "sans-serif-medium",
+                            android.graphics.Typeface.BOLD
+                        )
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isAntiAlias = true
+                    }
+
+                    val tickPaint = android.graphics.Paint().apply {
+                        color = TextSecondary.toArgb()
+                        textSize = 10.sp.toPx()
+                        typeface = android.graphics.Typeface.create(
+                            "sans-serif",
+                            android.graphics.Typeface.BOLD
+                        )
+                        isAntiAlias = true
+                    }
+
+                    // X-axis Ticks
+                    val xTicks = listOf(10, 13, 16, 19, 22)
+                    xTicks.forEach { tick ->
+                        val x = getScreenX(tick.toFloat())
+                        val y = plotBottom + 16.dp.toPx()
+                        tickPaint.textAlign = android.graphics.Paint.Align.CENTER
+                        drawContext.canvas.nativeCanvas.drawText(tick.toString(), x, y, tickPaint)
+                    }
+
+                    // Y-axis Ticks
+                    val yTicks = listOf(56, 57, 58, 59, 60, 61, 62)
+                    yTicks.forEach { tick ->
+                        val x = plotLeft - 8.dp.toPx()
+                        val y = getScreenY(tick.toFloat()) + 4.dp.toPx()
+                        tickPaint.textAlign = android.graphics.Paint.Align.RIGHT
+                        drawContext.canvas.nativeCanvas.drawText(tick.toString(), x, y, tickPaint)
+                    }
+
+                    // Titles
+                    drawContext.canvas.nativeCanvas.drawText(
+                        "Fat Mass (kg)",
+                        plotLeft + plotWidth / 2f,
+                        h - 4.dp.toPx(),
+                        titlePaint
+                    )
+                    drawContext.canvas.nativeCanvas.save()
+                    drawContext.canvas.nativeCanvas.translate(
+                        12.dp.toPx(),
+                        plotTop + plotHeight / 2f
+                    )
+                    drawContext.canvas.nativeCanvas.rotate(-90f)
+                    drawContext.canvas.nativeCanvas.drawText("Lean Mass (kg)", 0f, 0f, titlePaint)
+                    drawContext.canvas.nativeCanvas.restore()
+
+                    // Coordinates of data points
+                    val startX = getScreenX(start.fatMass)
+                    val startY = getScreenY(start.leanMass)
+                    val targetX = getScreenX(target.fatMass)
+                    val targetY = getScreenY(target.leanMass)
+
+                    val progress = animationProgress.value
+
+                    // Arrows
+                    drawAnimatedArrow(
+                        start = Offset(startX, startY),
+                        end = Offset(currentX, currentY),
+                        color = Color(0xFF64748B),
+                        strokeWidth = 2.dp.toPx(),
+                        isDashed = true,
+                        arrowheadSizePx = 8.dp.toPx(),
+                        endOffsetPx = 8.dp.toPx(),
+                        progress = progress
+                    )
+
+                    drawAnimatedArrow(
+                        start = Offset(currentX, currentY),
+                        end = Offset(targetX, targetY),
+                        color = Color(0xFF188038),
+                        strokeWidth = 2.5.dp.toPx(),
+                        isDashed = false,
+                        arrowheadSizePx = 10.dp.toPx(),
+                        endOffsetPx = 10.dp.toPx(),
+                        progress = progress
+                    )
+
+                    // Target Aura
+                    if (progress > 0) {
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFF188038).copy(alpha = 0.2f * progress),
+                                    Color.Transparent
+                                ),
+                                center = Offset(targetX, targetY),
+                                radius = 32.dp.toPx()
+                            ),
+                            radius = 32.dp.toPx(),
+                            center = Offset(targetX, targetY)
+                        )
+                    }
+
+                    // Draw Data Points
+                    val pointRadius = 6.dp.toPx()
+                    fun drawShinyPoint(
+                        x: Float,
+                        y: Float,
+                        color: Color,
+                        isCurrent: Boolean = false
+                    ) {
+                        val r = if (isCurrent) pointRadius * 1.3f else pointRadius
+                        drawContext.canvas.nativeCanvas.apply {
+                            drawCircle(
+                                x, y, r,
+                                android.graphics.Paint().apply {
+                                    this.color = color.toArgb()
+                                    setShadowLayer(10f, 0f, 4f, color.copy(alpha = 0.6f).toArgb())
+                                    isAntiAlias = true
+                                }
+                            )
+                        }
+                        drawCircle(
+                            color = Color.White,
+                            radius = r,
+                            center = Offset(x, y),
+                            style = Stroke(width = 2.dp.toPx()),
+                            alpha = progress
+                        )
+                    }
+
+                    if (progress > 0) {
+                        drawShinyPoint(startX, startY, Color(0xFF94A3B8))
+                        drawShinyPoint(targetX, targetY, Color(0xFF188038))
+                        drawShinyPoint(currentX, currentY, AccentPurple, isCurrent = true)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Weight Summary Marker
+            val currentWeight = current.fatMass + current.leanMass
+            val targetWeight = target.fatMass + target.leanMass
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF1F5F9))
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Current Weight",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "%.1f kg".format(currentWeight),
+                        fontSize = 16.sp,
+                        color = AccentPurple,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Text(
+                    text = "→",
+                    fontSize = 20.sp,
+                    color = TextSecondary.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.Bold
+                )
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Target Weight",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "%.1f kg".format(targetWeight),
+                        fontSize = 16.sp,
+                        color = Color(0xFF188038),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+        }
+    }
+}
+
+data class ExcessFatGaugeData(
+    val currentFatMassKg: Float,
+    val targetFatMassKg: Float
+)
+
+@Composable
+fun ExcessFatGaugeComponent(
+    data: ExcessFatGaugeData = ExcessFatGaugeData(
+        currentFatMassKg = 18.39f,
+        targetFatMassKg = 12.92f
+    ),
+    modifier: Modifier = Modifier
+) {
+    val currentFatMassKg = data.currentFatMassKg
+    val targetFatMassKg = data.targetFatMassKg
+    val excessFatKg = maxOf(0f, currentFatMassKg - targetFatMassKg)
+    val hasExcessFat = excessFatKg > 0f
+    val excessColor = if (hasExcessFat) Color(0xFFFF8A1E) else Color(0xFF45A96B)
+    val excessGradient = Brush.linearGradient(
+        listOf(
+            if (hasExcessFat) Color(0xFFFFB84D) else Color(0xFF6DCC91),
+            excessColor
+        )
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = Color.Black.copy(alpha = 0.03f),
+                spotColor = Color.Black.copy(alpha = 0.03f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(CardBackground)
+            .border(
+                width = 1.dp,
+                color = CardBorder,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "EXCESS FAT GAUGE",
+                    color = AccentPurple,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.5.sp,
+                    style = compactTextStyle()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Compares current fat mass against your target fat mass.",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Gauge Box
+            Box(
+                modifier = Modifier
+                    .width(280.dp)
+                    .height(160.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                val animationProgress = remember { Animatable(0f) }
+                LaunchedEffect(currentFatMassKg, targetFatMassKg) {
+                    animationProgress.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing)
+                    )
+                }
+
+                val gapAngle = 2.5f
+
+                // Sweep angles mapping logic:
+                val greenSweep: Float
+                val orangeSweep: Float
+
+                if (excessFatKg <= 0f) {
+                    greenSweep = 180f
+                    orangeSweep = 0f
+                } else {
+                    val denominator = (targetFatMassKg + excessFatKg).coerceAtLeast(0.01f)
+                    val availableSweep = 180f - gapAngle
+
+                    greenSweep = (targetFatMassKg / denominator) * availableSweep
+                    orangeSweep = (excessFatKg / denominator) * availableSweep
+                }
+
+                Canvas(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+                    val strokeWidthPx = 18.dp.toPx()
+                    val radius = (canvasWidth - strokeWidthPx - 40.dp.toPx()) / 2f
+                    val centerX = canvasWidth / 2f
+                    val centerY = canvasHeight - 20.dp.toPx()
+
+                    val topLeft = Offset(centerX - radius, centerY - radius)
+                    val arcSize = Size(radius * 2f, radius * 2f)
+
+                    drawArc(
+                        color = Color(0xFFF1F5F9),
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Butt)
+                    )
+
+                    val animProgress = animationProgress.value
+                    val activeGreenSweep = greenSweep * animProgress
+                    val activeOrangeSweep = orangeSweep * animProgress
+
+                    // Draw Green Segment
+                    if (activeGreenSweep > 0f) {
+                        drawArc(
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF6DCC91),
+                                    Color(0xFF45A96B)
+                                )
+                            ),
+                            startAngle = 180f,
+                            sweepAngle = activeGreenSweep,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Butt)
+                        )
+                    }
+
+                    // Draw Orange Segment
+                    if (activeOrangeSweep > 0f) {
+                        val orangeStartAngle = 180f + activeGreenSweep + gapAngle
+                        drawArc(
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFFFFB84D),
+                                    Color(0xFFFF8A1E)
+                                )
+                            ),
+                            startAngle = orangeStartAngle,
+                            sweepAngle = activeOrangeSweep,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Butt)
+                        )
+                    }
+                }
+
+                // Center Value Text
+                Column(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val animatedExcessFat = excessFatKg * animationProgress.value
+
+                    Text(
+                        text = "%.1f kg".format(animatedExcessFat),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary,
+                        style = compactTextStyle(),
+                        letterSpacing = (-1).sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (hasExcessFat) "TO LOSE" else "ON TARGET",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary,
+                        letterSpacing = 1.sp,
+                        style = compactTextStyle()
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Legend Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                ExcessFatLegendItem(
+                    label = "Target",
+                    rangeText = "%.1f kg".format(targetFatMassKg),
+                    color = Color(0xFF45A96B),
+                    gradient = Brush.linearGradient(listOf(Color(0xFF6DCC91), Color(0xFF45A96B))),
+                    isActive = !hasExcessFat,
+                    modifier = Modifier.weight(1f)
+                )
+                ExcessFatLegendItem(
+                    label = "Excess",
+                    rangeText = "%.1f kg".format(excessFatKg),
+                    color = excessColor,
+                    gradient = excessGradient,
+                    isActive = hasExcessFat,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExcessFatLegendItem(
+    label: String,
+    rangeText: String,
+    color: Color,
+    gradient: Brush,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .height(6.dp)
+                .fillMaxWidth(0.78f)
+                .clip(RoundedCornerShape(3.dp))
+                .background(
+                    if (isActive) gradient else Brush.linearGradient(
+                        listOf(
+                            Color(0xFFF1F5F9),
+                            Color(0xFFF1F5F9)
+                        )
+                    )
+                )
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+            color = if (isActive) TextPrimary else TextSecondary,
+            style = compactTextStyle()
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = rangeText,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isActive) color.copy(alpha = 0.78f) else TextSecondary.copy(alpha = 0.6f),
+            style = compactTextStyle()
+        )
     }
 }
