@@ -35,10 +35,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.AccessibilityNew
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Straighten
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -66,6 +72,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -186,6 +193,7 @@ fun Summary(
 
             BodyCompositionPanel(composition = essentials.compositionSummary)
             BodyMeasurementsPanel(measurements = essentials.measurements)
+            BodyMeasurementRatiosPanel(measurements = essentials.measurements)
             WeightDashboard(
                 currentWeight = essentials.currentWeight.toFloat(),
                 goalWeight = essentials.goalWeight.toFloat(),
@@ -1602,80 +1610,261 @@ fun BodyMeasurementsPanel(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
 
-            // Redesigned metrics panel showing ratios
+        }
+    }
+}
+
+@Composable
+fun BodyMeasurementRatiosPanel(
+    measurements: Measurements,
+    heightCm: Double? = 175.0,
+    modifier: Modifier = Modifier
+) {
+    val ratios = listOf(
+        getRatioData(
+            label = "Waist / Height",
+            numerator = measurements.waistCm,
+            denominator = heightCm
+        ),
+        getRatioData(
+            label = "Shoulder / Waist",
+            numerator = measurements.shoulderCm,
+            denominator = measurements.waistCm
+        ),
+        getRatioData(
+            label = "Chest / Waist",
+            numerator = measurements.chestCm,
+            denominator = measurements.waistCm
+        ),
+        getRatioData(
+            label = "Bicep / Forearm",
+            numerator = measurements.bicepCm,
+            denominator = measurements.forearmCm
+        ),
+        getRatioData(
+            label = "Thigh / Calf",
+            numerator = measurements.thighCm,
+            denominator = measurements.calfCm
+        ),
+        getRatioData(
+            label = "Neck / Calf",
+            numerator = measurements.neckCm,
+            denominator = measurements.calfCm
+        )
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "BODY RATIOS",
+            color = Blue,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.5.sp,
+            style = compactTextStyle(),
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            RatioCard(
+                ratio = ratios[0],
+                modifier = Modifier.weight(1f)
+            )
+            RatioCard(
+                ratio = ratios[1],
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            RatioCard(
+                ratio = ratios[2],
+                modifier = Modifier.weight(1f)
+            )
+            RatioCard(
+                ratio = ratios[3],
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            RatioCard(
+                ratio = ratios[4],
+                modifier = Modifier.weight(1f)
+            )
+            RatioCard(
+                ratio = ratios[5],
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+private data class BodyRatioUiModel(
+    val label: String,
+    val value: String,
+    val remark: String,
+    val badgeColor: Color,
+    val icon: ImageVector
+)
+
+private fun getRatioData(
+    label: String,
+    numerator: Double,
+    denominator: Double?
+): BodyRatioUiModel {
+    val ratioValue = if (denominator != null && denominator > 0) numerator / denominator else null
+    val formattedValue = if (ratioValue != null) {
+        String.format(java.util.Locale.US, "%.2f", ratioValue)
+    } else {
+        "-"
+    }
+    
+    val (remark, badgeColor) = when (label) {
+        "Waist / Height" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue < 0.43) "Slim: low health risk" to Cyan
+            else if (ratioValue <= 0.52) "Optimal: healthy body composition" to Success
+            else if (ratioValue <= 0.57) "Moderate: slightly elevated waist mass" to Orange
+            else "High risk: focus on reducing waist fat" to Color(0xFFEF4444)
+        }
+        "Shoulder / Waist" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue >= 1.618) "Golden Taper: highly athletic shape" to Purple
+            else if (ratioValue >= 1.45) "V-Taper: strong upper frame proportion" to Blue
+            else "Taper Build: build shoulders / trim waist" to TextSecondary
+        }
+        "Chest / Waist" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue >= 1.3) "Athletic: powerful torso development" to Blue
+            else if (ratioValue >= 1.18) "Balanced: classic chest-to-waist ratio" to Success
+            else "Standard: target chest hypertrophy" to TextSecondary
+        }
+        "Bicep / Forearm" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue > 1.3) "Upper-Arm Dominant: target forearm strength" to TextSecondary
+            else if (ratioValue >= 1.15) "Symmetrical: ideal arm balance" to Success
+            else "Forearm Dominant: target bicep volume" to TextSecondary
+        }
+        "Thigh / Calf" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue > 1.65) "Thigh Dominant: focus on calves" to TextSecondary
+            else if (ratioValue >= 1.45) "Proportional: balanced leg development" to Success
+            else "Calf Dominant: build quad sweep" to TextSecondary
+        }
+        "Neck / Calf" -> {
+            if (ratioValue == null) "No data available" to TextSecondary
+            else if (ratioValue in 0.95..1.05) "Symmetrical: ideal classic proportion" to Success
+            else if (ratioValue > 1.05) "Neck Dominant: focus on calf development" to TextSecondary
+            else "Calf Dominant: focus on neck development" to TextSecondary
+        }
+        else -> "" to TextSecondary
+    }
+
+    return BodyRatioUiModel(
+        label = label,
+        value = formattedValue,
+        remark = remark,
+        badgeColor = badgeColor,
+        icon = ratioIconFor(label)
+    )
+}
+
+private fun ratioIconFor(label: String): ImageVector = when (label) {
+    "Waist / Height" -> Icons.Outlined.Straighten
+    "Shoulder / Waist" -> Icons.Outlined.AccessibilityNew
+    "Chest / Waist" -> Icons.Outlined.FavoriteBorder
+    "Bicep / Forearm" -> Icons.Outlined.FitnessCenter
+    "Thigh / Calf" -> Icons.AutoMirrored.Outlined.DirectionsRun
+    "Neck / Calf" -> Icons.Outlined.Face
+    else -> Icons.Outlined.Straighten
+}
+
+@Composable
+private fun RatioCard(
+    ratio: BodyRatioUiModel,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(18.dp)
+    Card(
+        modifier = modifier,
+        shape = shape,
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.92f)
+        ),
+        border = BorderStroke(1.dp, BorderSoft)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color(0xFFF8FAFC), RoundedCornerShape(16.dp))
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                CompactMetricItem(
-                    label = "Shoulder\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(
-                        java.util.Locale.US,
-                        "%.2f",
-                        measurements.shoulderCm / measurements.waistCm
-                    ) else "-",
-                    unit = "",
-                    modifier = Modifier.weight(1f)
-                )
                 Box(
                     modifier = Modifier
-                        .width(1.dp)
-                        .height(24.dp)
-                        .background(Color(0xFFE2E8F0))
-                )
-                CompactMetricItem(
-                    label = "Chest\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(
-                        java.util.Locale.US,
-                        "%.2f",
-                        measurements.chestCm / measurements.waistCm
-                    ) else "-",
-                    unit = "",
-                    modifier = Modifier.weight(1f)
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(24.dp)
-                        .background(Color(0xFFE2E8F0))
-                )
-                CompactMetricItem(
-                    label = "Bicep\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(
-                        java.util.Locale.US,
-                        "%.2f",
-                        measurements.bicepCm / measurements.waistCm
-                    ) else "-",
-                    unit = "",
-                    modifier = Modifier.weight(1f)
-                )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(24.dp)
-                        .background(Color(0xFFE2E8F0))
-                )
-                CompactMetricItem(
-                    label = "Thigh\n÷ Waist",
-                    value = if (measurements.waistCm > 0) String.format(
-                        java.util.Locale.US,
-                        "%.2f",
-                        measurements.thighCm / measurements.waistCm
-                    ) else "-",
-                    unit = "",
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(ratio.badgeColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = ratio.icon,
+                        contentDescription = null,
+                        tint = ratio.badgeColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Text(
+                    text = ratio.label.uppercase(java.util.Locale.US),
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 13.sp,
+                    style = compactTextStyle(),
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+            
+            Text(
+                text = ratio.value,
+                color = TextPrimary,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 32.sp,
+                style = compactTextStyle()
+            )
+            
+            HorizontalDivider(
+                modifier = Modifier.fillMaxWidth(),
+                color = BorderSoft,
+                thickness = 1.dp
+            )
+            
+            Text(
+                text = ratio.remark,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
