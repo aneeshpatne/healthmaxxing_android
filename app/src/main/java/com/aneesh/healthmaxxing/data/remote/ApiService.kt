@@ -32,4 +32,7 @@ interface ApiService {
 
     @GET("client/profiles/{profileId}/essentials")
     suspend fun getEssentials(@Path("profileId") profileId: String): Response<ProfileEssentialsResponse>
+
+    @GET("client/profiles/{profileId}/performance")
+    suspend fun getPerformance(@Path("profileId") profileId: String): Response<PerformanceResponse>
 }
