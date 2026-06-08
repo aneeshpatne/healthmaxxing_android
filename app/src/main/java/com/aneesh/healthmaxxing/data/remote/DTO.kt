@@ -157,3 +157,80 @@ data class WeightTrend(
     @SerializedName("createdAt") val createdAt: String
 )
 
+data class PerformanceResponse(
+    @SerializedName("ok") val ok: Boolean,
+    @SerializedName("profileId") val profileId: String,
+    @SerializedName("performance") val performance: Performance
+)
+
+data class Performance(
+    @SerializedName("ffmi") val ffmi: Double,
+    @SerializedName("ffmiVsFmi") val ffmiVsFmi: FfmiVsFmi,
+    @SerializedName("bodyComposition") val bodyComposition: BodyCompositionData,
+    @SerializedName("compositionTrends") val compositionTrends: CompositionTrends,
+    @SerializedName("weightPair") val weightPair: WeightPair,
+    @SerializedName("excessFatGauge") val excessFatGauge: ExcessFatGauge,
+    @SerializedName("bodyMeasurements") val bodyMeasurements: List<Measurements>,
+    @SerializedName("lastBodyRatios") val lastBodyRatios: LastBodyRatios,
+    @SerializedName("comments") val comments: PerformanceComments
+)
+
+data class FfmiVsFmi(
+    @SerializedName("ffmi") val ffmi: Double,
+    @SerializedName("fmi") val fmi: Double
+)
+
+data class BodyCompositionData(
+    @SerializedName("leanMassKg") val leanMassKg: Double,
+    @SerializedName("fatMassKg") val fatMassKg: Double
+)
+
+data class CompositionTrends(
+    @SerializedName("leanMass30Days") val leanMass30Days: List<CompositionTrendPoint>,
+    @SerializedName("fatMass30Days") val fatMass30Days: List<CompositionTrendPoint>
+)
+
+data class CompositionTrendPoint(
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("value") val value: Double
+)
+
+data class WeightPair(
+    @SerializedName("target") val target: BodyCompositionData,
+    @SerializedName("current") val current: BodyCompositionData,
+    @SerializedName("initial") val initial: BodyCompositionData
+)
+
+data class ExcessFatGauge(
+    @SerializedName("totalFatKg") val totalFatKg: Double,
+    @SerializedName("targetFatKg") val targetFatKg: Double,
+    @SerializedName("excessFatKg") val excessFatKg: Double
+)
+
+data class LastBodyRatios(
+    @SerializedName("waistHeight") val waistHeight: Double,
+    @SerializedName("shoulderWaist") val shoulderWaist: Double,
+    @SerializedName("chestWaist") val chestWaist: Double,
+    @SerializedName("bicepForearm") val bicepForearm: Double,
+    @SerializedName("thighCalf") val thighCalf: Double,
+    @SerializedName("neckCalf") val neckCalf: Double
+)
+
+data class PerformanceComments(
+    @SerializedName("ffmi") val ffmi: PerformanceComment?,
+    @SerializedName("ffmiVsFmi") val ffmiVsFmi: PerformanceComment?,
+    @SerializedName("compositionFlow") val compositionFlow: PerformanceComment?,
+    @SerializedName("compositionTrend") val compositionTrend: PerformanceComment?,
+    @SerializedName("recompVector") val recompVector: PerformanceComment?,
+    @SerializedName("excessFatGauge") val excessFatGauge: PerformanceComment?,
+    @SerializedName("shoulderWaist") val shoulderWaist: PerformanceComment?,
+    @SerializedName("chestWaist") val chestWaist: PerformanceComment?,
+    @SerializedName("bicepForearm") val bicepForearm: PerformanceComment?,
+    @SerializedName("thighCalf") val thighCalf: PerformanceComment?,
+    @SerializedName("neckCalf") val neckCalf: PerformanceComment?
+)
+
+data class PerformanceComment(
+    @SerializedName("remark") val remark: String?,
+    @SerializedName("comment") val comment: String
+)
