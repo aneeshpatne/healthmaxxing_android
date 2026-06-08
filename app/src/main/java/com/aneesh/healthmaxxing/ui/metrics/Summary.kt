@@ -1717,6 +1717,7 @@ private data class BodyRatioUiModel(
     val value: String,
     val remark: String,
     val badgeColor: Color,
+    val pillText: String,
     val icon: ImageVector
 )
 
@@ -1732,45 +1733,45 @@ private fun getRatioData(
         "-"
     }
     
-    val (remark, badgeColor) = when (label) {
+    val (remark, badgeColor, pillText) = when (label) {
         "Waist / Height" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue < 0.43) "Slim: low health risk" to Cyan
-            else if (ratioValue <= 0.52) "Optimal: healthy body composition" to Success
-            else if (ratioValue <= 0.57) "Moderate: slightly elevated waist mass" to Orange
-            else "High risk: focus on reducing waist fat" to Color(0xFFEF4444)
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue < 0.43) Triple("Slim: low health risk", Cyan, "Slim")
+            else if (ratioValue <= 0.52) Triple("Optimal: healthy body composition", Success, "Optimal")
+            else if (ratioValue <= 0.57) Triple("Moderate: slightly elevated waist mass", Orange, "Moderate")
+            else Triple("High risk: focus on reducing waist fat", Color(0xFFEF4444), "High")
         }
         "Shoulder / Waist" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue >= 1.618) "Golden Taper: highly athletic shape" to Purple
-            else if (ratioValue >= 1.45) "V-Taper: strong upper frame proportion" to Blue
-            else "Taper Build: build shoulders / trim waist" to TextSecondary
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue >= 1.618) Triple("Golden Taper: highly athletic shape", Purple, "Golden")
+            else if (ratioValue >= 1.45) Triple("V-Taper: strong upper frame proportion", Blue, "Taper")
+            else Triple("Taper Build: build shoulders / trim waist", TextSecondary, "Build")
         }
         "Chest / Waist" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue >= 1.3) "Athletic: powerful torso development" to Blue
-            else if (ratioValue >= 1.18) "Balanced: classic chest-to-waist ratio" to Success
-            else "Standard: target chest hypertrophy" to TextSecondary
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue >= 1.3) Triple("Athletic: powerful torso development", Blue, "Athletic")
+            else if (ratioValue >= 1.18) Triple("Balanced: classic chest-to-waist ratio", Success, "Balanced")
+            else Triple("Standard: target chest hypertrophy", TextSecondary, "Standard")
         }
         "Bicep / Forearm" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue > 1.3) "Upper-Arm Dominant: target forearm strength" to TextSecondary
-            else if (ratioValue >= 1.15) "Symmetrical: ideal arm balance" to Success
-            else "Forearm Dominant: target bicep volume" to TextSecondary
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue > 1.3) Triple("Upper-Arm Dominant: target forearm strength", TextSecondary, "Upper")
+            else if (ratioValue >= 1.15) Triple("Symmetrical: ideal arm balance", Success, "Symmetry")
+            else Triple("Forearm Dominant: target bicep volume", TextSecondary, "Forearm")
         }
         "Thigh / Calf" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue > 1.65) "Thigh Dominant: focus on calves" to TextSecondary
-            else if (ratioValue >= 1.45) "Proportional: balanced leg development" to Success
-            else "Calf Dominant: build quad sweep" to TextSecondary
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue > 1.65) Triple("Thigh Dominant: focus on calves", TextSecondary, "Thigh")
+            else if (ratioValue >= 1.45) Triple("Proportional: balanced leg development", Success, "Balanced")
+            else Triple("Calf Dominant: build quad sweep", TextSecondary, "Calf")
         }
         "Neck / Calf" -> {
-            if (ratioValue == null) "No data available" to TextSecondary
-            else if (ratioValue in 0.95..1.05) "Symmetrical: ideal classic proportion" to Success
-            else if (ratioValue > 1.05) "Neck Dominant: focus on calf development" to TextSecondary
-            else "Calf Dominant: focus on neck development" to TextSecondary
+            if (ratioValue == null) Triple("No data available", TextSecondary, "Missing")
+            else if (ratioValue in 0.95..1.05) Triple("Symmetrical: ideal classic proportion", Success, "Symmetry")
+            else if (ratioValue > 1.05) Triple("Neck Dominant: focus on calf development", TextSecondary, "Neck")
+            else Triple("Calf Dominant: focus on neck development", TextSecondary, "Calf")
         }
-        else -> "" to TextSecondary
+        else -> Triple("", TextSecondary, "Status")
     }
 
     return BodyRatioUiModel(
@@ -1778,6 +1779,7 @@ private fun getRatioData(
         value = formattedValue,
         remark = remark,
         badgeColor = badgeColor,
+        pillText = pillText,
         icon = ratioIconFor(label)
     )
 }
@@ -1821,13 +1823,13 @@ private fun RatioCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(ratio.badgeColor.copy(alpha = 0.12f)),
+                        .background(Green.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = ratio.icon,
                         contentDescription = null,
-                        tint = ratio.badgeColor,
+                        tint = Green,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -1851,21 +1853,58 @@ private fun RatioCard(
                 lineHeight = 32.sp,
                 style = compactTextStyle()
             )
+
+            RatioRemarkPill(text = ratio.pillText)
             
-            HorizontalDivider(
-                modifier = Modifier.fillMaxWidth(),
-                color = BorderSoft,
-                thickness = 1.dp
-            )
-            
-            Text(
-                text = ratio.remark,
-                color = TextSecondary,
-                fontSize = 11.sp,
-                lineHeight = 15.sp,
-                fontWeight = FontWeight.Medium
-            )
+            RatioTextRemarkSection(text = ratio.remark)
         }
+    }
+}
+
+@Composable
+private fun RatioRemarkPill(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = Green.copy(alpha = 0.10f),
+        shape = RoundedCornerShape(999.dp)
+    ) {
+        Text(
+            text = text,
+            color = Green,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = 12.sp,
+            style = compactTextStyle(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun RatioTextRemarkSection(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        HorizontalDivider(
+            color = BorderSoft,
+            thickness = 1.dp
+        )
+
+        Text(
+            text = text,
+            color = TextSecondary,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.Normal,
+            style = compactTextStyle()
+        )
     }
 }
 
