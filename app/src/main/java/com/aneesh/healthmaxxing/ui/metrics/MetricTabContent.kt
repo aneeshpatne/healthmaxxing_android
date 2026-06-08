@@ -80,21 +80,25 @@ fun MetricTabContent(
             }
 
             2 -> {
-                Fat()
+                Performance()
             }
 
             3 -> {
-                Muscle()
+                Fat()
             }
 
             4 -> {
+                Muscle()
+            }
+
+            5 -> {
                 MetricDetailPlaceholder(
                     title = "Lean Mass Status",
                     description = "View your protein levels to ensure proper nutrition, muscle repair, and recovery support."
                 )
             }
 
-            5 -> {
+            6 -> {
                 MetricDetailPlaceholder(
                     title = "Protein Level",
                     description = "Keep track of total body water percentage to maintain peak cellular performance and energy."
@@ -102,7 +106,7 @@ fun MetricTabContent(
 
             }
 
-            6 -> {
+            7 -> {
                 MetricDetailPlaceholder(
                     title = "Hydration Level",
                     description = "Keep track of total body water percentage to maintain peak cellular performance and energy."
@@ -152,3 +156,4 @@ private fun MetricDetailPlaceholder(
         }
     }
 }
+
