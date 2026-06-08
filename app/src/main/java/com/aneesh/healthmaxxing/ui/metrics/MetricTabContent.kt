@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import com.aneesh.healthmaxxing.data.remote.InsightsResponse
+import com.aneesh.healthmaxxing.data.remote.PerformanceResponse
 import com.aneesh.healthmaxxing.data.remote.ProfileEssentialsResponse
 import com.aneesh.healthmaxxing.data.remote.TrendPoint
 
@@ -34,6 +35,9 @@ fun MetricTabContent(
     essentialsResponse: ProfileEssentialsResponse? = null,
     essentialsLoading: Boolean = false,
     essentialsError: String? = null,
+    performanceResponse: PerformanceResponse? = null,
+    performanceLoading: Boolean = false,
+    performanceError: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -80,7 +84,11 @@ fun MetricTabContent(
             }
 
             2 -> {
-                Performance()
+                Performance(
+                    performanceResponse = performanceResponse,
+                    isLoading = performanceLoading,
+                    error = performanceError
+                )
             }
 
             3 -> {
