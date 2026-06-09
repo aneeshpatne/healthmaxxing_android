@@ -223,6 +223,16 @@ data class PerformanceComments(
     @SerializedName("compositionTrend") val compositionTrend: PerformanceComment?,
     @SerializedName("recompVector") val recompVector: PerformanceComment?,
     @SerializedName("excessFatGauge") val excessFatGauge: PerformanceComment?,
+    @SerializedName("bodyRatios") val bodyRatios: BodyRatioComments?,
+    @SerializedName("shoulderWaist") val shoulderWaist: PerformanceComment?,
+    @SerializedName("chestWaist") val chestWaist: PerformanceComment?,
+    @SerializedName("bicepForearm") val bicepForearm: PerformanceComment?,
+    @SerializedName("thighCalf") val thighCalf: PerformanceComment?,
+    @SerializedName("neckCalf") val neckCalf: PerformanceComment?
+)
+
+data class BodyRatioComments(
+    @SerializedName("waistHeight") val waistHeight: PerformanceComment?,
     @SerializedName("shoulderWaist") val shoulderWaist: PerformanceComment?,
     @SerializedName("chestWaist") val chestWaist: PerformanceComment?,
     @SerializedName("bicepForearm") val bicepForearm: PerformanceComment?,
@@ -232,5 +242,5 @@ data class PerformanceComments(
 
 data class PerformanceComment(
     @SerializedName("remark") val remark: String?,
-    @SerializedName("comment") val comment: String
+    @SerializedName("comment") val comment: String?
 )
