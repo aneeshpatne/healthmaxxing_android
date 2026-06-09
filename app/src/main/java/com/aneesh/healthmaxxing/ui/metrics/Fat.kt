@@ -7,6 +7,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,8 +56,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aneesh.healthmaxxing.data.remote.TrendPoint
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -80,17 +85,44 @@ private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
 
+private fun Double?.formatMetric(decimals: Int = 1, fallback: String = "--"): String {
+    return this?.let { "%.${decimals}f".format(it) } ?: fallback
+}
+
+private fun List<TrendPoint>.latestPoint(): TrendPoint? {
+    return maxByOrNull { it.createdAt }
+}
+
+private fun List<TrendPoint>.previousPoint(): TrendPoint? {
+    return sortedBy { it.createdAt }.dropLast(1).lastOrNull()
+}
+
+private fun TrendPoint?.shortDate(): String {
+    val value = this?.createdAt ?: return "--"
+    return if (value.length >= 10) value.substring(5, 10) else value
+}
+
+private fun deltaText(points: List<TrendPoint>, suffix: String = ""): String {
+    val latest = points.latestPoint()?.value ?: return "--"
+    val previous = points.previousPoint()?.value ?: return "--"
+    val delta = latest - previous
+    val sign = if (delta > 0) "+" else ""
+    return "$sign${"%.1f".format(delta)}$suffix"
+}
+
 @Composable
 fun FatRatioCard(
     modifier: Modifier = Modifier,
     fatRatio: String = "24.3",
     delta: String = "-1.6%",
-    comparisonDate: String = "Apr 14"
+    comparisonDate: String = "Apr 14",
+    remark: String = "Healthy",
+    comment: String = "Your fat ratio is within the healthy range for your age and gender."
 ) {
     Box(
         modifier = modifier
             .width(330.dp)
-            .height(185.dp)
+            .height(205.dp)
             .shadow(
                 elevation = 2.dp,
                 shape = RoundedCornerShape(24.dp),
@@ -159,16 +191,18 @@ fun FatRatioCard(
 
                 Spacer(Modifier.height(5.dp))
 
-                HealthyPill()
+                FatRemarkPill(remark = remark)
 
                 Text(
-                    text = "Your fat ratio is within the\nhealthy range for your age\nand gender.",
+                    text = comment,
                     color = TextSecondary,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
                     fontWeight = FontWeight.Normal,
                     modifier = Modifier.padding(top = 10.dp),
-                    style = compactTextStyle()
+                    style = compactTextStyle(),
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -207,26 +241,29 @@ fun FatRatioCard(
 }
 
 @Composable
-private fun HealthyPill() {
+private fun FatRemarkPill(
+    remark: String,
+    color: Color = Success
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(PillBackground)
+            .background(color.copy(alpha = 0.1f))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(6.dp)
                 .clip(CircleShape)
-                .background(Success)
+                .background(color)
         )
 
         Spacer(Modifier.width(5.dp))
 
         Text(
-            text = "Healthy",
-            color = Success,
+            text = remark,
+            color = color,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             lineHeight = 11.sp,
@@ -529,13 +566,14 @@ private fun MetricStatsCard(
 }
 
 @Composable
-private fun Stats() {
+private fun Stats(fat: FatUiState) {
     var activeSheet by rememberSaveable {
         mutableStateOf<SheetType?>(null)
     }
 
     BottomSheetScreen(
         activeSheet = activeSheet,
+        fat = fat,
         onDismissRequest = { activeSheet = null }
     )
 
@@ -549,9 +587,9 @@ private fun Stats() {
         ) {
             MetricStatsCard(
                 label = "Fat Mass",
-                valueText = "17.4",
+                valueText = fat.fatMassKg.formatMetric(),
                 unit = "kg",
-                caption = "Healthy range",
+                caption = fat.comments.fatMass?.remark ?: "Latest reading",
                 captionColor = Success,
                 onClick = { activeSheet = SheetType.FAT_MASS },
                 showInfoIcon = true,
@@ -562,9 +600,9 @@ private fun Stats() {
 
             MetricStatsCard(
                 label = "Visceral Fat",
-                valueText = "6",
-                unit = "",
-                caption = "Healthy index",
+                valueText = fat.visceralFat.formatMetric(),
+                unit = "kg",
+                caption = fat.comments.visceralFatMass?.remark ?: "Latest mass",
                 captionColor = Success,
                 onClick = { activeSheet = SheetType.VISCERAL_FAT },
                 showInfoIcon = true,
@@ -580,9 +618,9 @@ private fun Stats() {
         ) {
             MetricStatsCard(
                 label = "Subcutaneous Ratio",
-                valueText = "14.2",
+                valueText = fat.subcutaneousFatPct.formatMetric(),
                 unit = "%",
-                caption = "Normal limits",
+                caption = fat.comments.subcutaneousFatRatio?.remark ?: "Latest reading",
                 captionColor = Success,
                 onClick = { activeSheet = SheetType.SUBCUTANEOUS_FAT_RATIO },
                 showInfoIcon = true,
@@ -593,9 +631,9 @@ private fun Stats() {
 
             MetricStatsCard(
                 label = "Subcutaneous Mass",
-                valueText = "10.7",
+                valueText = fat.subcutaneousFatMassKg.formatMetric(),
                 unit = "kg",
-                caption = "Healthy range",
+                caption = fat.comments.subcutaneousFatMass?.remark ?: "Latest reading",
                 captionColor = Success,
                 onClick = { activeSheet = SheetType.SUBCUTANEOUS_FAT_MASS },
                 showInfoIcon = true,
@@ -608,7 +646,37 @@ private fun Stats() {
 }
 
 @Composable
-fun Fat() {
+fun Fat(
+    fat: FatUiState = FatUiState(),
+    isLoading: Boolean = false,
+    error: String? = null
+) {
+    if (isLoading && fat.trends.isEmpty()) {
+        Text(
+            text = "Loading fat metrics...",
+            color = TextSecondary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            textAlign = TextAlign.Center
+        )
+        return
+    }
+
+    if (error != null && fat.trends.isEmpty()) {
+        Text(
+            text = error,
+            color = Red,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            textAlign = TextAlign.Center
+        )
+        return
+    }
+
+    val bodyFatTrend = fat.trends[FAT_METRIC_BODY_FAT_PCT].orEmpty()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -616,8 +684,199 @@ fun Fat() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        FatRatioCard()
-        Stats()
+        FatRatioCard(
+            fatRatio = fat.bodyFatPct.formatMetric(),
+            delta = deltaText(bodyFatTrend, "%"),
+            comparisonDate = bodyFatTrend.previousPoint().shortDate(),
+            remark = fat.comments.fatPercent?.remark ?: "Healthy",
+            comment = fat.comments.fatPercent?.comment
+                ?: "Your fat ratio is within the healthy range for your age and gender."
+        )
+        Stats(fat = fat)
+    }
+}
+
+@Composable
+private fun FatTrendPlotCard(
+    title: String,
+    subtitle: String,
+    points: List<TrendPoint>,
+    unit: String,
+    lineColor: Color,
+    modifier: Modifier = Modifier
+) {
+    CustomizedCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = title,
+                        color = TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = compactTextStyle()
+                    )
+                    Text(
+                        text = subtitle,
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        style = compactTextStyle()
+                    )
+                }
+
+                val latest = points.latestPoint()?.value
+                Text(
+                    text = latest?.let { "${"%.1f".format(it)}$unit" } ?: "--",
+                    color = lineColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = compactTextStyle()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            FatLineChart(
+                points = points,
+                unit = unit,
+                lineColor = lineColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(190.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FatLineChart(
+    points: List<TrendPoint>,
+    unit: String,
+    lineColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val sortedPoints = points.sortedBy { it.createdAt }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (sortedPoints.size < 2) {
+            Text(
+                text = "Not enough data to plot yet.",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+            return@Box
+        }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val leftPad = 34.dp.toPx()
+            val rightPad = 12.dp.toPx()
+            val topPad = 12.dp.toPx()
+            val bottomPad = 28.dp.toPx()
+            val chartWidth = size.width - leftPad - rightPad
+            val chartHeight = size.height - topPad - bottomPad
+            val minValue = sortedPoints.minOf { it.value }.toFloat()
+            val maxValue = sortedPoints.maxOf { it.value }.toFloat()
+            val range = (maxValue - minValue).takeIf { it > 0f } ?: 1f
+
+            fun xFor(index: Int): Float {
+                val denominator = (sortedPoints.lastIndex).coerceAtLeast(1)
+                return leftPad + (index / denominator.toFloat()) * chartWidth
+            }
+
+            fun yFor(value: Double): Float {
+                val ratio = ((value.toFloat() - minValue) / range).coerceIn(0f, 1f)
+                return topPad + chartHeight - (ratio * chartHeight)
+            }
+
+            repeat(4) { index ->
+                val y = topPad + (index / 3f) * chartHeight
+                drawLine(
+                    color = CardBorder,
+                    start = Offset(leftPad, y),
+                    end = Offset(size.width - rightPad, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
+            drawLine(
+                color = TextSecondary.copy(alpha = 0.25f),
+                start = Offset(leftPad, topPad),
+                end = Offset(leftPad, topPad + chartHeight),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawLine(
+                color = TextSecondary.copy(alpha = 0.25f),
+                start = Offset(leftPad, topPad + chartHeight),
+                end = Offset(size.width - rightPad, topPad + chartHeight),
+                strokeWidth = 1.dp.toPx()
+            )
+
+            val offsets = sortedPoints.mapIndexed { index, point ->
+                Offset(xFor(index), yFor(point.value))
+            }
+
+            offsets.zipWithNext().forEach { (start, end) ->
+                drawLine(
+                    color = lineColor,
+                    start = start,
+                    end = end,
+                    strokeWidth = 3.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
+
+            offsets.forEach { offset ->
+                drawCircle(
+                    color = Color.White,
+                    radius = 5.dp.toPx(),
+                    center = offset
+                )
+                drawCircle(
+                    color = lineColor,
+                    radius = 5.dp.toPx(),
+                    center = offset,
+                    style = Stroke(width = 2.dp.toPx())
+                )
+            }
+
+            drawIntoCanvas { canvas ->
+                val labelPaint = Paint().apply {
+                    color = TextSecondary.toArgb()
+                    textSize = 10.sp.toPx()
+                    textAlign = Paint.Align.RIGHT
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                }
+                val bottomLabelPaint = Paint(labelPaint).apply {
+                    textAlign = Paint.Align.CENTER
+                }
+                val highLabel = "${"%.1f".format(maxValue)}$unit"
+                val lowLabel = "${"%.1f".format(minValue)}$unit"
+                canvas.nativeCanvas.drawText(highLabel, leftPad - 8.dp.toPx(), topPad + 4.dp.toPx(), labelPaint)
+                canvas.nativeCanvas.drawText(lowLabel, leftPad - 8.dp.toPx(), topPad + chartHeight, labelPaint)
+                canvas.nativeCanvas.drawText(
+                    sortedPoints.first().shortDate(),
+                    leftPad,
+                    size.height - 6.dp.toPx(),
+                    bottomLabelPaint
+                )
+                canvas.nativeCanvas.drawText(
+                    sortedPoints.last().shortDate(),
+                    size.width - rightPad,
+                    size.height - 6.dp.toPx(),
+                    bottomLabelPaint
+                )
+            }
+        }
     }
 }
 
@@ -625,6 +884,7 @@ fun Fat() {
 @Composable
 fun BottomSheetScreen(
     activeSheet: SheetType?,
+    fat: FatUiState = FatUiState(),
     onDismissRequest: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -647,33 +907,69 @@ fun BottomSheetScreen(
             val title: String
             val headerText: String
             val explanation: String
+            val sheetRemark: String?
+            val sheetComment: String?
+            val trendTitle: String
+            val trendSubtitle: String
+            val trendPoints: List<TrendPoint>
+            val trendUnit: String
+            val trendColor: Color
 
             when (activeSheet) {
                 SheetType.FAT_MASS -> {
                     title = "FAT MASS INFO"
                     headerText = "Understanding Fat Mass"
                     explanation = "Fat mass represents the actual weight of fat tissue in your body (measured in kg or lbs), whereas fat ratio is the percentage of your total weight that is fat.\n\nMaintaining a healthy amount of fat mass is vital for hormone regulation, joint cushioning, and protecting internal organs."
+                    sheetRemark = fat.comments.fatMass?.remark
+                    sheetComment = fat.comments.fatMass?.comment
+                    trendTitle = "Fat Mass Trend"
+                    trendSubtitle = "30 day fat mass"
+                    trendPoints = fat.trends[FAT_METRIC_FAT_MASS_KG].orEmpty()
+                    trendUnit = "kg"
+                    trendColor = Orange
                 }
                 SheetType.VISCERAL_FAT -> {
                     title = "VISCERAL FAT INFO"
                     headerText = "Understanding Visceral Fat"
                     explanation = "Visceral fat is the body fat that is stored within the abdominal cavity, surrounding your internal organs (like the liver, pancreas, and kidneys).\n\nUnlike subcutaneous fat, high levels of visceral fat are strongly linked to cardiovascular disease, type 2 diabetes, and other metabolic issues. An index between 1 and 9 is considered healthy."
+                    sheetRemark = fat.comments.visceralFatMass?.remark
+                    sheetComment = fat.comments.visceralFatMass?.comment
+                    trendTitle = "Visceral Fat Trend"
+                    trendSubtitle = "30 day visceral fat mass"
+                    trendPoints = fat.trends[FAT_METRIC_VISCERAL_FAT].orEmpty()
+                    trendUnit = "kg"
+                    trendColor = Red
                 }
                 SheetType.SUBCUTANEOUS_FAT_RATIO -> {
                     title = "SUBCUTANEOUS FAT RATIO"
                     headerText = "Understanding Subcutaneous Ratio"
                     explanation = "Subcutaneous fat is the visible fat layer located directly beneath your skin. It is the type of fat you can pinch.\n\nWhile subcutaneous fat is less metabolically active and less dangerous than visceral fat, keeping its ratio within healthy bounds supports overall fitness and aesthetic health."
+                    sheetRemark = fat.comments.subcutaneousFatRatio?.remark
+                    sheetComment = fat.comments.subcutaneousFatRatio?.comment
+                    trendTitle = "Subcutaneous Ratio Trend"
+                    trendSubtitle = "30 day subcutaneous fat ratio"
+                    trendPoints = fat.trends[FAT_METRIC_SUBCUTANEOUS_FAT_PCT].orEmpty()
+                    trendUnit = "%"
+                    trendColor = Blue
                 }
                 SheetType.SUBCUTANEOUS_FAT_MASS -> {
                     title = "SUBCUTANEOUS FAT MASS"
                     headerText = "Understanding Subcutaneous Mass"
                     explanation = "Subcutaneous fat mass represents the absolute weight of the fat layer stored directly under your skin (measured in kg or lbs).\n\nMeasuring this mass helps track real changes in physical fat loss and muscle definition, which percentage calculations alone might not fully reflect."
+                    sheetRemark = fat.comments.subcutaneousFatMass?.remark
+                    sheetComment = fat.comments.subcutaneousFatMass?.comment
+                    trendTitle = "Subcutaneous Fat Trend"
+                    trendSubtitle = "30 day subcutaneous fat mass"
+                    trendPoints = fat.trends[FAT_METRIC_SUBCUTANEOUS_FAT_MASS_KG].orEmpty()
+                    trendUnit = "kg"
+                    trendColor = Success
                 }
             }
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -701,6 +997,13 @@ fun BottomSheetScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                sheetRemark?.let { remark ->
+                    Box(modifier = Modifier.align(Alignment.Start)) {
+                        FatRemarkPill(remark = remark)
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
                 // Explanatory card
                 Box(
                     modifier = Modifier
@@ -717,13 +1020,23 @@ fun BottomSheetScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = explanation,
+                        text = sheetComment ?: explanation,
                         color = TextSecondary,
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
                         style = compactTextStyle()
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                FatTrendPlotCard(
+                    title = trendTitle,
+                    subtitle = trendSubtitle,
+                    points = trendPoints,
+                    unit = trendUnit,
+                    lineColor = trendColor
+                )
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
