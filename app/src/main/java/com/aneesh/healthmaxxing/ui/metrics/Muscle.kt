@@ -9,6 +9,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,9 +55,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.R
+import com.aneesh.healthmaxxing.data.remote.TrendPoint
 import kotlinx.coroutines.delay
 
 object MuscleSnapshotColors {
@@ -80,6 +84,26 @@ object MuscleSnapshotColors {
 
 private val MuscleCardBorder = Color(0xFFE6EEF2)
 
+private fun Double?.formatMuscle(decimals: Int = 1, fallback: String = "--"): String {
+    return this?.let { "%.${decimals}f".format(it) } ?: fallback
+}
+
+private fun List<TrendPoint>.latestMusclePoint(): TrendPoint? {
+    return maxByOrNull { it.createdAt }
+}
+
+private fun List<TrendPoint>.previousMusclePoint(): TrendPoint? {
+    return sortedBy { it.createdAt }.dropLast(1).lastOrNull()
+}
+
+private fun muscleDeltaText(points: List<TrendPoint>, suffix: String = ""): String {
+    val latest = points.latestMusclePoint()?.value ?: return "--"
+    val previous = points.previousMusclePoint()?.value ?: return "--"
+    val delta = latest - previous
+    val sign = if (delta > 0) "+" else ""
+    return "$sign${"%.1f".format(delta)}$suffix"
+}
+
 object MuscleVsBodyColors {
     val Background = Color(0xFFFFFFFF)
 
@@ -94,7 +118,37 @@ object MuscleVsBodyColors {
 }
 
 @Composable
-fun Muscle() {
+fun Muscle(
+    muscle: MuscleUiState = MuscleUiState(),
+    isLoading: Boolean = false,
+    error: String? = null
+) {
+    if (isLoading && muscle.totalMuscleKg == null) {
+        Text(
+            text = "Loading muscle metrics...",
+            color = MuscleSnapshotColors.SecondaryText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            textAlign = TextAlign.Center
+        )
+        return
+    }
+
+    if (error != null && muscle.totalMuscleKg == null) {
+        Text(
+            text = error,
+            color = Color(0xFFEF4444),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            textAlign = TextAlign.Center
+        )
+        return
+    }
+
+    val muscleRatio = muscle.muscleRatio?.toFloat() ?: 92f
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,20 +156,29 @@ fun Muscle() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        MuscleSnapshotCard()
-        MuscleVsRestOfBodyCard()
-        MuscleStats()
+        MuscleSnapshotCard(
+            muscleMass = muscle.totalMuscleKg.formatMuscle(),
+            delta = muscleDeltaText(muscle.trends[MUSCLE_METRIC_SKELETAL_MUSCLE_MASS_KG].orEmpty(), " kg"),
+            remark = muscle.comments.totalMuscle?.remark ?: "Strong",
+            comment = muscle.comments.totalMuscle?.comment
+        )
+        MuscleVsRestOfBodyCard(
+            musclePercentage = muscleRatio,
+            restPercentage = (100f - muscleRatio).coerceAtLeast(0f)
+        )
+        MuscleStats(muscle = muscle)
     }
 }
 
 @Composable
-private fun MuscleStats() {
+private fun MuscleStats(muscle: MuscleUiState) {
     var activeSheet by rememberSaveable {
         mutableStateOf<MuscleSheetType?>(null)
     }
 
     MuscleMetricBottomSheet(
         activeSheet = activeSheet,
+        muscle = muscle,
         onDismissRequest = { activeSheet = null }
     )
 
@@ -129,9 +192,9 @@ private fun MuscleStats() {
         ) {
             MuscleMetricStatsCard(
                 label = "Bone Mass",
-                valueText = "2.8",
+                valueText = muscle.boneMassKg.formatMuscle(),
                 unit = "kg",
-                caption = "Healthy range",
+                caption = muscle.comments.boneMass?.remark ?: "Latest reading",
                 onClick = { activeSheet = MuscleSheetType.BONE_MASS },
                 modifier = Modifier
                     .weight(1f)
@@ -140,9 +203,9 @@ private fun MuscleStats() {
 
             MuscleMetricStatsCard(
                 label = "Muscle Ratio",
-                valueText = "57.3",
+                valueText = muscle.muscleRatio.formatMuscle(),
                 unit = "%",
-                caption = "Strong range",
+                caption = muscle.comments.muscleRatio?.remark ?: "Latest reading",
                 onClick = { activeSheet = MuscleSheetType.MUSCLE_RATIO },
                 modifier = Modifier
                     .weight(1f)
@@ -156,9 +219,9 @@ private fun MuscleStats() {
         ) {
             MuscleMetricStatsCard(
                 label = "Skeleton Muscle Mass",
-                valueText = "24.8",
+                valueText = muscle.skeletalMuscleMassKg.formatMuscle(),
                 unit = "kg",
-                caption = "Healthy range",
+                caption = muscle.comments.skeletalMuscleMass?.remark ?: "Latest reading",
                 onClick = { activeSheet = MuscleSheetType.SKELETON_MUSCLE_MASS },
                 modifier = Modifier
                     .weight(1f)
@@ -167,9 +230,9 @@ private fun MuscleStats() {
 
             MuscleMetricStatsCard(
                 label = "Skeleton Muscle Ratio",
-                valueText = "33.6",
+                valueText = muscle.skeletalMuscleRatio.formatMuscle(),
                 unit = "%",
-                caption = "Normal range",
+                caption = muscle.comments.skeletalMuscleRatio?.remark ?: "Latest reading",
                 onClick = { activeSheet = MuscleSheetType.SKELETON_MUSCLE_RATIO },
                 modifier = Modifier
                     .weight(1f)
@@ -296,6 +359,7 @@ private fun MuscleMetricStatsCard(
 @Composable
 private fun MuscleMetricBottomSheet(
     activeSheet: MuscleSheetType?,
+    muscle: MuscleUiState,
     onDismissRequest: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -318,33 +382,59 @@ private fun MuscleMetricBottomSheet(
             val title: String
             val headerText: String
             val explanation: String
+            val remark: String?
+            val comment: String?
+            val trendTitle: String
+            val trendPoints: List<TrendPoint>
+            val trendUnit: String
 
             when (activeSheet) {
                 MuscleSheetType.BONE_MASS -> {
                     title = "BONE MASS INFO"
                     headerText = "Understanding Bone Mass"
                     explanation = "Bone mass estimates the weight of mineral content in your bones.\n\nIt is a useful body-composition marker because stronger bones support posture, training capacity, and long-term mobility. Changes are usually gradual, so trends matter more than single readings."
+                    remark = muscle.comments.boneMass?.remark
+                    comment = muscle.comments.boneMass?.comment
+                    trendTitle = "Bone Mass Trend"
+                    trendPoints = muscle.trends[MUSCLE_METRIC_BONE_MASS_KG].orEmpty()
+                    trendUnit = "kg"
                 }
                 MuscleSheetType.MUSCLE_RATIO -> {
                     title = "MUSCLE RATIO INFO"
                     headerText = "Understanding Muscle Ratio"
                     explanation = "Muscle ratio is the percentage of your total body weight represented by muscle mass.\n\nA higher healthy muscle ratio usually reflects better strength potential, metabolic health, and body composition, especially when tracked alongside body weight and fat ratio."
+                    remark = muscle.comments.muscleRatio?.remark
+                    comment = muscle.comments.muscleRatio?.comment
+                    trendTitle = "Muscle Ratio Trend"
+                    trendPoints = muscle.trends[MUSCLE_METRIC_MUSCLE_RATIO].orEmpty()
+                    trendUnit = "%"
                 }
                 MuscleSheetType.SKELETON_MUSCLE_MASS -> {
                     title = "SKELETON MUSCLE MASS"
                     headerText = "Understanding Skeletal Muscle Mass"
                     explanation = "Skeletal muscle mass is the muscle attached to your bones that helps you move, lift, stabilize joints, and maintain posture.\n\nThis metric is especially useful for strength and fitness tracking because it focuses on the muscles most directly affected by resistance training."
+                    remark = muscle.comments.skeletalMuscleMass?.remark
+                    comment = muscle.comments.skeletalMuscleMass?.comment
+                    trendTitle = "Skeletal Muscle Mass Trend"
+                    trendPoints = muscle.trends[MUSCLE_METRIC_SKELETAL_MUSCLE_MASS_KG].orEmpty()
+                    trendUnit = "kg"
                 }
                 MuscleSheetType.SKELETON_MUSCLE_RATIO -> {
                     title = "SKELETON MUSCLE RATIO"
                     headerText = "Understanding Skeletal Muscle Ratio"
                     explanation = "Skeletal muscle ratio shows skeletal muscle mass as a percentage of total body weight.\n\nIt helps compare muscular development independent of body size, and is best interpreted together with total muscle mass, fat ratio, and recent training trends."
+                    remark = muscle.comments.skeletalMuscleRatio?.remark
+                    comment = muscle.comments.skeletalMuscleRatio?.comment
+                    trendTitle = "Skeletal Muscle Ratio Trend"
+                    trendPoints = muscle.trends[MUSCLE_METRIC_SKELETAL_MUSCLE_RATIO].orEmpty()
+                    trendUnit = "%"
                 }
             }
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -371,6 +461,11 @@ private fun MuscleMetricBottomSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                remark?.let {
+                    MuscleRemarkPill(text = it, modifier = Modifier.align(Alignment.Start))
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -386,7 +481,7 @@ private fun MuscleMetricBottomSheet(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = explanation,
+                        text = comment ?: explanation,
                         color = MuscleSnapshotColors.SecondaryText,
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
@@ -394,7 +489,164 @@ private fun MuscleMetricBottomSheet(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                MuscleTrendPlotCard(
+                    title = trendTitle,
+                    points = trendPoints,
+                    unit = trendUnit
+                )
+
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MuscleRemarkPill(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(MuscleSnapshotColors.SuccessGreen.copy(alpha = 0.1f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = MuscleSnapshotColors.SuccessGreen,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+        )
+    }
+}
+
+@Composable
+private fun MuscleTrendPlotCard(
+    title: String,
+    points: List<TrendPoint>,
+    unit: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, MuscleCardBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    color = MuscleSnapshotColors.PrimaryText,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                )
+                Text(
+                    text = points.latestMusclePoint()?.value?.let { "${"%.1f".format(it)}$unit" } ?: "--",
+                    color = MuscleSnapshotColors.MuscleBlue,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            MuscleLineChart(
+                points = points,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(170.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MuscleLineChart(
+    points: List<TrendPoint>,
+    modifier: Modifier = Modifier
+) {
+    val sortedPoints = points.sortedBy { it.createdAt }
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (sortedPoints.size < 2) {
+            Text(
+                text = "Not enough data to plot yet.",
+                color = MuscleSnapshotColors.SecondaryText,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+            return@Box
+        }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val leftPad = 12.dp.toPx()
+            val rightPad = 12.dp.toPx()
+            val topPad = 12.dp.toPx()
+            val bottomPad = 16.dp.toPx()
+            val chartWidth = size.width - leftPad - rightPad
+            val chartHeight = size.height - topPad - bottomPad
+            val minValue = sortedPoints.minOf { it.value }.toFloat()
+            val maxValue = sortedPoints.maxOf { it.value }.toFloat()
+            val range = (maxValue - minValue).takeIf { it > 0f } ?: 1f
+
+            fun xFor(index: Int): Float {
+                val denominator = sortedPoints.lastIndex.coerceAtLeast(1)
+                return leftPad + (index / denominator.toFloat()) * chartWidth
+            }
+
+            fun yFor(value: Double): Float {
+                val ratio = ((value.toFloat() - minValue) / range).coerceIn(0f, 1f)
+                return topPad + chartHeight - ratio * chartHeight
+            }
+
+            repeat(4) { index ->
+                val y = topPad + (index / 3f) * chartHeight
+                drawLine(
+                    color = MuscleCardBorder,
+                    start = androidx.compose.ui.geometry.Offset(leftPad, y),
+                    end = androidx.compose.ui.geometry.Offset(size.width - rightPad, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
+            val offsets = sortedPoints.mapIndexed { index, point ->
+                androidx.compose.ui.geometry.Offset(xFor(index), yFor(point.value))
+            }
+
+            offsets.zipWithNext().forEach { (start, end) ->
+                drawLine(
+                    color = MuscleSnapshotColors.MuscleBlue,
+                    start = start,
+                    end = end,
+                    strokeWidth = 3.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
+
+            offsets.forEach { offset ->
+                drawCircle(color = Color.White, radius = 5.dp.toPx(), center = offset)
+                drawCircle(
+                    color = MuscleSnapshotColors.MuscleBlue,
+                    radius = 5.dp.toPx(),
+                    center = offset,
+                    style = Stroke(width = 2.dp.toPx())
+                )
             }
         }
     }
@@ -566,7 +818,9 @@ fun MuscleSnapshotCard(
     muscleMass: String = "42.3",
     unit: String = "kg",
     delta: String = "+1.8 kg",
-    comparisonLabel: String = "vs last scan"
+    comparisonLabel: String = "vs last scan",
+    remark: String = "Strong",
+    comment: String? = null
 ) {
     var showInfoSheet by remember { mutableStateOf(false) }
 
@@ -707,13 +961,19 @@ fun MuscleSnapshotCard(
     }
 
     if (showInfoSheet) {
-        MuscleInfoBottomSheet(onDismiss = { showInfoSheet = false })
+        MuscleInfoBottomSheet(
+            remark = remark,
+            comment = comment,
+            onDismiss = { showInfoSheet = false }
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MuscleInfoBottomSheet(
+    remark: String? = null,
+    comment: String? = null,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -758,6 +1018,11 @@ fun MuscleInfoBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            remark?.let {
+                MuscleRemarkPill(text = it, modifier = Modifier.align(Alignment.Start))
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -773,7 +1038,8 @@ fun MuscleInfoBottomSheet(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Total Muscle Mass includes skeletal muscles, smooth muscles, and the water contained in them.\n\nIncreasing muscle mass boosts your metabolic rate, helps burn more calories even at rest, improves strength, and protects joints and bone density as you age.",
+                    text = comment
+                        ?: "Total Muscle Mass includes skeletal muscles, smooth muscles, and the water contained in them.\n\nIncreasing muscle mass boosts your metabolic rate, helps burn more calories even at rest, improves strength, and protects joints and bone density as you age.",
                     color = MuscleSnapshotColors.SecondaryText,
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
