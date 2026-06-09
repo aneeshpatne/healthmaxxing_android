@@ -1619,38 +1619,62 @@ fun BodyMeasurementsPanel(
 fun BodyMeasurementRatiosPanel(
     measurements: Measurements,
     heightCm: Double? = 175.0,
+    waistHeightRatio: Double? = null,
+    shoulderWaistRatio: Double? = null,
+    chestWaistRatio: Double? = null,
+    bicepForearmRatio: Double? = null,
+    thighCalfRatio: Double? = null,
+    neckCalfRatio: Double? = null,
+    waistHeightRemark: String? = null,
+    shoulderWaistRemark: String? = null,
+    chestWaistRemark: String? = null,
+    bicepForearmRemark: String? = null,
+    thighCalfRemark: String? = null,
+    neckCalfRemark: String? = null,
     modifier: Modifier = Modifier
 ) {
     val ratios = listOf(
         getRatioData(
             label = "Waist / Height",
             numerator = measurements.waistCm,
-            denominator = heightCm
+            denominator = heightCm,
+            overrideRatio = waistHeightRatio,
+            overrideRemark = waistHeightRemark
         ),
         getRatioData(
             label = "Shoulder / Waist",
             numerator = measurements.shoulderCm,
-            denominator = measurements.waistCm
+            denominator = measurements.waistCm,
+            overrideRatio = shoulderWaistRatio,
+            overrideRemark = shoulderWaistRemark
         ),
         getRatioData(
             label = "Chest / Waist",
             numerator = measurements.chestCm,
-            denominator = measurements.waistCm
+            denominator = measurements.waistCm,
+            overrideRatio = chestWaistRatio,
+            overrideRemark = chestWaistRemark
         ),
         getRatioData(
             label = "Bicep / Forearm",
             numerator = measurements.bicepCm,
-            denominator = measurements.forearmCm
+            denominator = measurements.forearmCm,
+            overrideRatio = bicepForearmRatio,
+            overrideRemark = bicepForearmRemark
         ),
         getRatioData(
             label = "Thigh / Calf",
             numerator = measurements.thighCm,
-            denominator = measurements.calfCm
+            denominator = measurements.calfCm,
+            overrideRatio = thighCalfRatio,
+            overrideRemark = thighCalfRemark
         ),
         getRatioData(
             label = "Neck / Calf",
             numerator = measurements.neckCm,
-            denominator = measurements.calfCm
+            denominator = measurements.calfCm,
+            overrideRatio = neckCalfRatio,
+            overrideRemark = neckCalfRemark
         )
     )
 
@@ -1724,9 +1748,11 @@ private data class BodyRatioUiModel(
 private fun getRatioData(
     label: String,
     numerator: Double,
-    denominator: Double?
+    denominator: Double?,
+    overrideRatio: Double? = null,
+    overrideRemark: String? = null
 ): BodyRatioUiModel {
-    val ratioValue = if (denominator != null && denominator > 0) numerator / denominator else null
+    val ratioValue = overrideRatio ?: if (denominator != null && denominator > 0) numerator / denominator else null
     val formattedValue = if (ratioValue != null) {
         String.format(java.util.Locale.US, "%.2f", ratioValue)
     } else {
@@ -1777,7 +1803,7 @@ private fun getRatioData(
     return BodyRatioUiModel(
         label = label,
         value = formattedValue,
-        remark = remark,
+        remark = overrideRemark?.takeIf { it.isNotBlank() } ?: remark,
         badgeColor = badgeColor,
         pillText = pillText,
         icon = ratioIconFor(label)
