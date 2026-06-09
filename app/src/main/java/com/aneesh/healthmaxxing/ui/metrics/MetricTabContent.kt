@@ -38,6 +38,12 @@ fun MetricTabContent(
     performanceResponse: PerformanceResponse? = null,
     performanceLoading: Boolean = false,
     performanceError: String? = null,
+    fat: FatUiState = FatUiState(),
+    fatLoading: Boolean = false,
+    fatError: String? = null,
+    muscle: MuscleUiState = MuscleUiState(),
+    muscleLoading: Boolean = false,
+    muscleError: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -92,11 +98,19 @@ fun MetricTabContent(
             }
 
             3 -> {
-                Fat()
+                Fat(
+                    fat = fat,
+                    isLoading = fatLoading,
+                    error = fatError
+                )
             }
 
             4 -> {
-                Muscle()
+                Muscle(
+                    muscle = muscle,
+                    isLoading = muscleLoading,
+                    error = muscleError
+                )
             }
 
             5 -> {
@@ -164,4 +178,3 @@ private fun MetricDetailPlaceholder(
         }
     }
 }
-

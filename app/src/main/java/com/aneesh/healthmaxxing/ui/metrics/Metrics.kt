@@ -25,7 +25,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun MetricsScreen(
     viewModel: InsightsViewModel = hiltViewModel(),
     essentialsViewModel: EssentialsViewModel = hiltViewModel(),
-    performanceViewModel: PerformanceViewModel = hiltViewModel()
+    performanceViewModel: PerformanceViewModel = hiltViewModel(),
+    fatViewModel: FatViewModel = hiltViewModel(),
+    muscleViewModel: MuscleViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val insights by viewModel.insights.collectAsState()
@@ -45,12 +47,24 @@ fun MetricsScreen(
     val performanceRefreshing by performanceViewModel.isRefreshing.collectAsState()
     val performanceError by performanceViewModel.error.collectAsState()
 
+    val fat by fatViewModel.fat.collectAsState()
+    val fatLoading by fatViewModel.isLoading.collectAsState()
+    val fatRefreshing by fatViewModel.isRefreshing.collectAsState()
+    val fatError by fatViewModel.error.collectAsState()
+
+    val muscle by muscleViewModel.muscle.collectAsState()
+    val muscleLoading by muscleViewModel.isLoading.collectAsState()
+    val muscleRefreshing by muscleViewModel.isRefreshing.collectAsState()
+    val muscleError by muscleViewModel.error.collectAsState()
+
     PullToRefreshBox(
-        isRefreshing = isRefreshing || essentialsRefreshing || performanceRefreshing,
+        isRefreshing = isRefreshing || essentialsRefreshing || performanceRefreshing || fatRefreshing || muscleRefreshing,
         onRefresh = { 
             viewModel.refresh(isUserInitiated = true)
             essentialsViewModel.refresh(isUserInitiated = true)
             performanceViewModel.refresh(isUserInitiated = true)
+            fatViewModel.refresh(isUserInitiated = true)
+            muscleViewModel.refresh(isUserInitiated = true)
         },
         modifier = Modifier.fillMaxSize()
     ) {
@@ -74,7 +88,13 @@ fun MetricsScreen(
                 essentialsError = essentialsError,
                 performanceResponse = performance,
                 performanceLoading = performanceLoading,
-                performanceError = performanceError
+                performanceError = performanceError,
+                fat = fat,
+                fatLoading = fatLoading,
+                fatError = fatError,
+                muscle = muscle,
+                muscleLoading = muscleLoading,
+                muscleError = muscleError
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
