@@ -6,6 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import com.google.gson.JsonObject
 
 interface ApiService {
     @POST("client/register")
@@ -35,4 +36,10 @@ interface ApiService {
 
     @GET("client/profiles/{profileId}/performance")
     suspend fun getPerformance(@Path("profileId") profileId: String): Response<PerformanceResponse>
+
+    @GET("client/profiles/{profileId}/fat")
+    suspend fun getFat(@Path("profileId") profileId: String): Response<JsonObject>
+
+    @GET("client/profiles/{profileId}/muscle")
+    suspend fun getMuscle(@Path("profileId") profileId: String): Response<JsonObject>
 }
