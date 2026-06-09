@@ -52,6 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aneesh.healthmaxxing.data.remote.Measurements
+import com.aneesh.healthmaxxing.data.remote.PerformanceComment
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -64,6 +66,16 @@ private val AccentPurple = Color(0xFF6D5DF6)
 private fun compactTextStyle() = TextStyle(
     platformStyle = PlatformTextStyle(includeFontPadding = false)
 )
+
+private fun PerformanceComment?.commentText(fallback: String): String {
+    return this?.comment?.takeIf { it.isNotBlank() } ?: fallback
+}
+
+private fun PerformanceComment?.remarkCommentText(fallback: String): String {
+    val comment = this?.comment?.takeIf { it.isNotBlank() } ?: return fallback
+    val remark = this.remark?.takeIf { it.isNotBlank() }
+    return if (remark != null) "$remark: $comment" else comment
+}
 
 @Composable
 private fun PerformanceTextRemarkSection(
@@ -105,6 +117,7 @@ data class GaugeRange(
 @Composable
 fun FfmiGaugeComponent(
     value: Float = 19.9f,
+    remarkText: String = "FFMI highlights how much fat-free mass you carry for your height; higher values usually reflect stronger lean-mass development.",
     modifier: Modifier = Modifier
 ) {
     val minValue = 15f
@@ -414,7 +427,7 @@ fun FfmiGaugeComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "FFMI highlights how much fat-free mass you carry for your height; higher values usually reflect stronger lean-mass development."
+                text = remarkText
             )
         }
     }
@@ -463,13 +476,18 @@ fun Performance(
             )
         } else if (performanceResponse != null) {
             val perf = performanceResponse.performance
-            FfmiGaugeComponent(value = perf.ffmi.toFloat())
+            val comments = perf.comments
+            FfmiGaugeComponent(
+                value = perf.ffmi.toFloat(),
+                remarkText = comments.ffmi.commentText("FFMI highlights how much fat-free mass you carry for your height; higher values usually reflect stronger lean-mass development.")
+            )
             
             FfmiVsFmiChartComponent(
                 userPoint = BodyCompositionPoint(
                     ffmi = perf.ffmiVsFmi.ffmi.toFloat(),
                     fmi = perf.ffmiVsFmi.fmi.toFloat()
-                )
+                ),
+                remarkText = comments.ffmiVsFmi.commentText("The best zone combines higher FFMI with lower FMI, showing more lean tissue without carrying excess fat mass.")
             )
 
             BodyCompositionSankeyComponent(
@@ -477,7 +495,8 @@ fun Performance(
                     totalWeight = (perf.bodyComposition.leanMassKg + perf.bodyComposition.fatMassKg).toFloat(),
                     leanMass = perf.bodyComposition.leanMassKg.toFloat(),
                     fatMass = perf.bodyComposition.fatMassKg.toFloat()
-                )
+                ),
+                remarkText = comments.compositionFlow.commentText("This flow separates your scale weight into lean and fat mass so progress is judged by composition, not weight alone.")
             )
 
             val trendPoints = perf.compositionTrends.leanMass30Days.zip(perf.compositionTrends.fatMass30Days).map { (lean, fat) ->
@@ -489,9 +508,14 @@ fun Performance(
                 )
             }
             if (trendPoints.isNotEmpty()) {
-                LeanFatTrendChartComponent(data = trendPoints)
+                LeanFatTrendChartComponent(
+                    data = trendPoints,
+                    remarkText = comments.compositionTrend.commentText("A strong trend shows lean mass moving up while fat mass moves down or stays controlled over the same period.")
+                )
             } else {
-                LeanFatTrendChartComponent()
+                LeanFatTrendChartComponent(
+                    remarkText = comments.compositionTrend.commentText("A strong trend shows lean mass moving up while fat mass moves down or stays controlled over the same period.")
+                )
             }
 
             RecompVectorPlotComponent(
@@ -506,21 +530,35 @@ fun Performance(
                 target = RecompPoint(
                     fatMass = perf.weightPair.target.fatMassKg.toFloat(),
                     leanMass = perf.weightPair.target.leanMassKg.toFloat()
-                )
+                ),
+                remarkText = comments.recompVector.commentText("The ideal recomp path moves left and upward: less fat mass with equal or greater lean mass.")
             )
 
             ExcessFatGaugeComponent(
                 data = ExcessFatGaugeData(
                     currentFatMassKg = perf.excessFatGauge.totalFatKg.toFloat(),
                     targetFatMassKg = perf.excessFatGauge.targetFatKg.toFloat()
-                )
+                ),
+                remarkText = comments.excessFatGauge.commentText("Excess fat is the gap between current fat mass and target fat mass; reducing it improves composition without guessing from body weight.")
             )
 
             val measurementsToUse = perf.bodyMeasurements.firstOrNull() ?: dummyMeasurements
             BodyMeasurementsPanel(measurements = measurementsToUse)
             BodyMeasurementRatiosPanel(
                 measurements = measurementsToUse,
-                heightCm = 175.0 // Height is generally stored in metadata/essentials
+                heightCm = 175.0, // Height is generally stored in metadata/essentials
+                waistHeightRatio = perf.lastBodyRatios.waistHeight,
+                shoulderWaistRatio = perf.lastBodyRatios.shoulderWaist,
+                chestWaistRatio = perf.lastBodyRatios.chestWaist,
+                bicepForearmRatio = perf.lastBodyRatios.bicepForearm,
+                thighCalfRatio = perf.lastBodyRatios.thighCalf,
+                neckCalfRatio = perf.lastBodyRatios.neckCalf,
+                waistHeightRemark = comments.bodyRatios?.waistHeight.remarkCommentText("Waist-to-height ratio compares waist size against stature."),
+                shoulderWaistRemark = comments.bodyRatios?.shoulderWaist.remarkCommentText("Shoulder-to-waist ratio shows your taper."),
+                chestWaistRemark = comments.bodyRatios?.chestWaist.remarkCommentText("Chest-to-waist ratio shows torso balance."),
+                bicepForearmRemark = comments.bodyRatios?.bicepForearm.remarkCommentText("Bicep-to-forearm ratio shows arm balance."),
+                thighCalfRemark = comments.bodyRatios?.thighCalf.remarkCommentText("Thigh-to-calf ratio shows lower-body balance."),
+                neckCalfRemark = comments.bodyRatios?.neckCalf.remarkCommentText("Neck-to-calf ratio reflects classic proportional balance.")
             )
         }
     }
@@ -534,6 +572,7 @@ data class BodyCompositionPoint(
 @Composable
 fun FfmiVsFmiChartComponent(
     userPoint: BodyCompositionPoint = BodyCompositionPoint(19.9f, 6.2f),
+    remarkText: String = "The best zone combines higher FFMI with lower FMI, showing more lean tissue without carrying excess fat mass.",
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -905,7 +944,7 @@ fun FfmiVsFmiChartComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "The best zone combines higher FFMI with lower FMI, showing more lean tissue without carrying excess fat mass."
+                text = remarkText
             )
         }
     }
@@ -924,6 +963,7 @@ fun BodyCompositionSankeyComponent(
         leanMass = 58.86f,
         fatMass = 18.39f
     ),
+    remarkText: String = "This flow separates your scale weight into lean and fat mass so progress is judged by composition, not weight alone.",
     modifier: Modifier = Modifier
 ) {
     val leanPct = data.leanMass / data.totalWeight
@@ -1239,7 +1279,7 @@ fun BodyCompositionSankeyComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "This flow separates your scale weight into lean and fat mass so progress is judged by composition, not weight alone."
+                text = remarkText
             )
         }
     }
@@ -1250,13 +1290,14 @@ data class TrendDataPoint(val month: String, val leanMass: Float, val fatMass: F
 @Composable
 fun LeanFatTrendChartComponent(
     data: List<TrendDataPoint> = listOf(
-        TrendDataPoint("Jan", 56.5f, 20.1f),
-        TrendDataPoint("Feb", 57.0f, 19.8f),
-        TrendDataPoint("Mar", 57.5f, 19.2f),
-        TrendDataPoint("Apr", 58.0f, 18.9f),
-        TrendDataPoint("May", 58.4f, 18.5f),
-        TrendDataPoint("Jun", 58.86f, 18.39f)
+        TrendDataPoint("Jan", 0.0f, 0.0f),
+        TrendDataPoint("Feb", 0.4f, -0.2f),
+        TrendDataPoint("Mar", 0.7f, -0.5f),
+        TrendDataPoint("Apr", 0.5f, -0.8f),
+        TrendDataPoint("May", 0.9f, -1.1f),
+        TrendDataPoint("Jun", 0.8f, -1.3f)
     ),
+    remarkText: String = "A strong trend shows lean mass moving up while fat mass moves down or stays controlled over the same period.",
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -1297,7 +1338,7 @@ fun LeanFatTrendChartComponent(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Track how your lean mass and fat mass have changed over time.",
+                    text = "Track relative lean and fat mass changes from your baseline.",
                     color = TextSecondary,
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
@@ -1376,9 +1417,13 @@ fun LeanFatTrendChartComponent(
                     val plotWidth = plotRight - plotLeft
                     val plotHeight = plotBottom - plotTop
 
-                    val maxLean = data.maxOf { it.leanMass }
-                    val yMax = ((maxLean / 20).toInt() + 1) * 20f
-                    val yMin = 0f
+                    val maxAbsValue = data
+                        .flatMap { listOf(it.leanMass, it.fatMass) }
+                        .maxOfOrNull { kotlin.math.abs(it) }
+                        ?.coerceAtLeast(0.5f) ?: 1f
+                    val yLimit = ceil(maxAbsValue * 1.2f * 2f) / 2f
+                    val yMax = yLimit
+                    val yMin = -yLimit
 
                     val dx = plotWidth / (data.size - 1).coerceAtLeast(1)
 
@@ -1386,6 +1431,7 @@ fun LeanFatTrendChartComponent(
                         val fraction = ((value - yMin) / (yMax - yMin)).coerceIn(0f, 1f)
                         return plotBottom - fraction * plotHeight
                     }
+                    val zeroY = getY(0f)
 
                     // Grid lines and Y labels
                     val textPaint = Paint().apply {
@@ -1396,17 +1442,18 @@ fun LeanFatTrendChartComponent(
                     }
 
                     val lines = 4
-                    for (i in 0..lines) {
-                        val fraction = i.toFloat() / lines
+                    for (i in -lines..lines) {
+                        val value = i * yLimit / lines
+                        val fraction = (value - yMin) / (yMax - yMin)
                         val y = plotBottom - fraction * plotHeight
-                        val value = yMin + fraction * (yMax - yMin)
+                        val isZeroLine = kotlin.math.abs(value) < 0.0001f
 
                         drawLine(
-                            color = Color(0xFFE6EEF2), // CardBorder
+                            color = if (isZeroLine) Color(0xFF94A3B8) else Color(0xFFE6EEF2),
                             start = Offset(plotLeft, y),
                             end = Offset(plotRight, y),
-                            strokeWidth = 1.dp.toPx(),
-                            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                            strokeWidth = if (isZeroLine) 1.4.dp.toPx() else 1.dp.toPx(),
+                            pathEffect = if (isZeroLine) null else androidx.compose.ui.graphics.PathEffect.dashPathEffect(
                                 floatArrayOf(8f, 8f),
                                 0f
                             )
@@ -1414,8 +1461,13 @@ fun LeanFatTrendChartComponent(
 
                         val textHeight =
                             textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent
+                        val label = when {
+                            isZeroLine -> "0"
+                            value > 0f -> "+%.1f".format(value)
+                            else -> "%.1f".format(value)
+                        }
                         drawContext.canvas.nativeCanvas.drawText(
-                            value.toInt().toString(),
+                            label,
                             plotLeft - 8.dp.toPx(),
                             y + textHeight / 3f,
                             textPaint
@@ -1460,16 +1512,16 @@ fun LeanFatTrendChartComponent(
                     val leanFillPath = Path().apply {
                         addPath(leanPath)
                         if (pointsLean.isNotEmpty()) {
-                            lineTo(pointsLean.last().x, plotBottom)
-                            lineTo(pointsLean.first().x, plotBottom)
+                            lineTo(pointsLean.last().x, zeroY)
+                            lineTo(pointsLean.first().x, zeroY)
                             close()
                         }
                     }
                     val fatFillPath = Path().apply {
                         addPath(fatPath)
                         if (pointsFat.isNotEmpty()) {
-                            lineTo(pointsFat.last().x, plotBottom)
-                            lineTo(pointsFat.first().x, plotBottom)
+                            lineTo(pointsFat.last().x, zeroY)
+                            lineTo(pointsFat.first().x, zeroY)
                             close()
                         }
                     }
@@ -1569,7 +1621,7 @@ fun LeanFatTrendChartComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "A strong trend shows lean mass moving up while fat mass moves down or stays controlled over the same period."
+                text = remarkText
             )
         }
     }
@@ -1729,6 +1781,7 @@ fun RecompVectorPlotComponent(
     start: RecompPoint = RecompPoint(20.50f, 57.50f),
     current: RecompPoint = RecompPoint(18.39f, 58.86f),
     target: RecompPoint = RecompPoint(12.92f, 58.86f),
+    remarkText: String = "The ideal recomp path moves left and upward: less fat mass with equal or greater lean mass.",
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -2078,7 +2131,7 @@ fun RecompVectorPlotComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "The ideal recomp path moves left and upward: less fat mass with equal or greater lean mass."
+                text = remarkText
             )
         }
     }
@@ -2095,6 +2148,7 @@ fun ExcessFatGaugeComponent(
         currentFatMassKg = 18.39f,
         targetFatMassKg = 12.92f
     ),
+    remarkText: String = "Excess fat is the gap between current fat mass and target fat mass; reducing it improves composition without guessing from body weight.",
     modifier: Modifier = Modifier
 ) {
     val currentFatMassKg = data.currentFatMassKg
@@ -2308,7 +2362,7 @@ fun ExcessFatGaugeComponent(
             Spacer(modifier = Modifier.height(16.dp))
 
             PerformanceTextRemarkSection(
-                text = "Excess fat is the gap between current fat mass and target fat mass; reducing it improves composition without guessing from body weight."
+                text = remarkText
             )
         }
     }
