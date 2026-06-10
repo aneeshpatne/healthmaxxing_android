@@ -1,23 +1,17 @@
-# HealthMaxxing
+# Forma
 
-HealthMaxxing is a native Android health analytics app built with Kotlin and Jetpack Compose. The app, currently branded in Android resources as **Forma**, combines onboarding, profile persistence, backend-driven body-composition dashboards, and direct Bluetooth Low Energy smart-scale measurement capture.
+Forma is a native Android application for body-composition tracking and health metric review. It is built with Kotlin, Jetpack Compose, Hilt, Retrofit, Kotlin coroutines, Flow, and Jetpack DataStore.
 
-The project is structured as a modern single-module Android application using MVVM, Hilt dependency injection, Retrofit networking, Kotlin coroutines/Flow, and Jetpack DataStore. Its main user flow is:
+The app currently supports account onboarding, primary profile setup, backend-driven health dashboards, Bluetooth smart-scale measurement capture, and measurement upload. The Android package namespace still uses `com.aneesh.healthmaxxing`, but the product and project name is Forma.
 
-1. Register an account with an email address.
-2. Create a primary health profile with height, date of birth, gender, and body type.
-3. Persist the selected account/profile locally.
-4. Load dashboard metrics from the backend.
-5. Record live measurements from a compatible BLE smart scale.
-6. Submit completed measurements back to the backend.
+## Contents
 
-## Table Of Contents
-
-- [Project Status](#project-status)
-- [Features](#features)
+- [Status](#status)
+- [Implemented Features](#implemented-features)
+- [Metrics Shown](#metrics-shown)
 - [Application Flow](#application-flow)
 - [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
+- [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Backend Integration](#backend-integration)
 - [Bluetooth Scale Integration](#bluetooth-scale-integration)
@@ -29,60 +23,140 @@ The project is structured as a modern single-module Android application using MV
 - [Known Limitations](#known-limitations)
 - [Roadmap](#roadmap)
 
-## Project Status
+## Status
 
-HealthMaxxing is under active development. The implemented app includes onboarding, account/profile persistence, a dashboard shell, metric tabs, backend data loading, pull-to-refresh, BLE scale reading, and measurement upload.
+Forma is in active development. The production-ready surfaces today are onboarding, metric loading, metric refresh, BLE scale reading, and measurement submission. Some navigation and metric tabs are already present but still act as placeholders.
 
-The bottom navigation includes four destinations:
-
-| Destination | Status | Notes |
+| Area | Status | Notes |
 | --- | --- | --- |
-| Metrics | Implemented | Loads insights, essentials, performance, fat, and muscle dashboard data. |
-| Workouts | Placeholder | Navigation destination exists, but the screen currently renders placeholder text. |
-| Record | Implemented | Reads compatible BLE scale packets and posts completed measurements. |
-| Vitals | Placeholder | Navigation destination exists, but the screen currently renders placeholder text. |
+| Account onboarding | Implemented | Registers an account and creates a primary profile. |
+| Metrics dashboard | Implemented | Loads insights, essentials, performance, fat, and muscle data from the backend. |
+| Record screen | Implemented | Reads compatible BLE scale packets and saves completed measurements. |
+| Workouts | Placeholder | Destination exists in bottom navigation. |
+| Vitals | Placeholder | Destination exists in bottom navigation. |
+| Lean Mass / Protein / Hydration tabs | Placeholder | Tabs render informational placeholder cards. |
 
-## Features
+## Implemented Features
 
-### Account And Profile Onboarding
+### Account And Profile Setup
 
-- Email-based account registration through the backend.
-- Primary profile creation through a multi-step Compose onboarding flow.
-- Profile metadata submission, including height, date of birth, gender, and body type.
-- Automatic transition from onboarding to the main app once account/profile identifiers are saved.
-- Persistent account/profile selection using Jetpack DataStore Preferences.
+- Email-based account registration.
+- Primary profile creation.
+- Profile metadata submission for height, date of birth, gender, and body type.
+- Automatic transition into the main app after account and profile identifiers are stored.
+- Local account/profile persistence through DataStore Preferences.
 
 ### Metrics Dashboard
 
-The Metrics screen uses a scrollable tab interface with pull-to-refresh. It currently exposes:
+- Scrollable metric tab layout.
+- Pull-to-refresh across all implemented metric view models.
+- Loading, error, and empty states for backend-driven data.
+- Backend comments and remarks surfaced in several metric cards.
+- 30-day trend rendering where trend data is available.
 
-- **Insights**: Backend-provided overview, foundation insight, momentum insight, biggest lever, physique archetype, effort score, and momentum trend graph.
-- **Essentials**: Forma score, body age, real age, current/goal/average weight, composition summary, body measurements, and recent weight trend data.
-- **Performance**: FFMI/FMI values, lean/fat mass data, excess fat gauge data, body ratios, composition trends, and backend comments.
-- **Fat**: Backend-driven fat metrics represented through a `JsonObject` response and mapped into UI state.
-- **Muscle**: Backend-driven muscle metrics represented through a `JsonObject` response and mapped into UI state.
-- **Lean Mass, Protein, Hydration**: Placeholder detail cards.
+### Measurement Recording
 
-### Smart Scale Recording
+- Runtime Bluetooth permission requests.
+- Direct BLE GATT connection to a configured smart scale.
+- Live weight updates while packets stream.
+- Heart rate and impedance extraction when provided by the scale.
+- Final measurement detection.
+- Measurement upload using the selected primary profile ID.
+- User-visible status and error handling for permission, connection, missing profile, missing weight, and backend upload failures.
 
-The Record screen provides:
+## Metrics Shown
 
-- Runtime Bluetooth permission handling.
-- BLE connection to a configured smart scale.
-- Live weight display while scale packets stream in.
-- Heart rate and impedance display when available.
-- Final-measurement detection.
-- Measurement upload to the backend using the selected primary profile.
-- User-facing status and error states for permission, connection, missing profile, missing weight, and upload failures.
+The app displays a mix of backend-calculated metrics, smart-scale readings, and short explanatory comments. The following list summarizes the metrics currently represented in the app.
 
-### UI And Design
+### Insights
 
-- Fully Compose-based UI.
-- Material 3 components.
-- Edge-to-edge activity setup.
-- Custom typography using bundled Manrope and Cormorant Garamond fonts.
-- Custom vector and bitmap assets for branding, loading, body/physique visuals, charts, and launcher icons.
-- Animated loading logo while account state is being resolved.
+The Insights tab presents backend-generated narrative analysis:
+
+| Metric / Section | Summary |
+| --- | --- |
+| Overview | High-level assessment of the current profile state. |
+| Foundation | Baseline interpretation of body composition and current condition. |
+| Momentum | Directional analysis based on recent changes and trend factors. |
+| Biggest Lever | The highest-impact area to focus on next. |
+| Physique Archetype | Backend classification used to describe the current physique profile. |
+| Effort Score | Numeric score with a short remark describing consistency or progress quality. |
+| Momentum Trends | Multi-line chart for the trend factors returned by the backend. |
+
+### Essentials
+
+The Essentials tab focuses on broad profile health and weight context:
+
+| Metric | Summary |
+| --- | --- |
+| Forma Score | Overall score returned by the backend with a short remark. |
+| Body Age | Estimated body age from profile and body-composition data. |
+| Real Age | Chronological age used for comparison with body age. |
+| Current Weight | Most recent body weight. |
+| Goal Weight | Target body weight configured or calculated by the backend. |
+| Average Weight 30d | Average weight across the recent 30-day window. |
+| Lowest Weight 30d | Lowest weight recorded in the recent 30-day window. |
+| Weight Trend | Recent weight points used for charting and trend context. |
+| Composition Summary | Body fat, lean mass, protein, hydration, muscle mass, and composition score. |
+| Body Measurements | Neck, shoulder, chest, stomach, waist, calf, thigh, bicep, and forearm measurements. |
+
+### Performance
+
+The Performance tab focuses on body-composition quality and physique ratios:
+
+| Metric | Summary |
+| --- | --- |
+| FFMI | Fat-Free Mass Index, used to compare lean mass relative to height. |
+| FMI | Fat Mass Index, used to compare fat mass relative to height. |
+| Lean Mass | Current lean mass in kilograms. |
+| Fat Mass | Current fat mass in kilograms. |
+| Lean/Fat Trends | 30-day movement for lean mass and fat mass. |
+| Target / Current / Initial Composition | Comparison of fat and lean mass across target, current, and initial states. |
+| Excess Fat | Estimated excess fat above target fat mass. |
+| Waist-to-Height Ratio | Central body ratio used as a body-composition indicator. |
+| Shoulder-to-Waist Ratio | Upper-body-to-waist proportion indicator. |
+| Chest-to-Waist Ratio | Torso proportion indicator. |
+| Bicep-to-Forearm Ratio | Arm proportion indicator. |
+| Thigh-to-Calf Ratio | Lower-body proportion indicator. |
+| Neck-to-Calf Ratio | Symmetry/proportion indicator. |
+
+### Fat
+
+The Fat tab focuses on fat distribution and recent fat changes:
+
+| Metric | Summary |
+| --- | --- |
+| Fat Ratio / Body Fat % | Percentage of total body weight represented by fat. |
+| Fat Mass | Absolute fat mass in kilograms. |
+| Visceral Fat | Fat stored around internal organs, shown as mass or index depending on backend data. |
+| Visceral Fat % | Percentage-based visceral fat value when provided. |
+| Subcutaneous Fat % | Percentage of fat stored under the skin. |
+| Subcutaneous Fat Mass | Absolute subcutaneous fat mass in kilograms. |
+| Visceral vs Subcutaneous Delta | Recent 30-day movement comparing visceral and subcutaneous fat changes. |
+| Fat Trends | 30-day charts for available fat metrics. |
+
+### Muscle
+
+The Muscle tab focuses on muscle, skeletal muscle, and bone-related composition:
+
+| Metric | Summary |
+| --- | --- |
+| Total Muscle Mass | Total muscle mass, including skeletal and other muscle-related mass components. |
+| Muscle Ratio | Muscle mass as a percentage of total body weight. |
+| Muscle vs Rest of Body | Donut chart comparing muscle ratio against the remaining body mass. |
+| Bone Mass | Estimated mineral mass of bones. |
+| Skeletal Muscle Mass | Muscle attached to bones and most directly affected by strength training. |
+| Skeletal Muscle Ratio | Skeletal muscle mass as a percentage of total body weight. |
+| Muscle Trends | 30-day trend charts for available muscle and skeletal muscle metrics. |
+
+### Record Screen Measurements
+
+The Record screen shows raw values read from the smart scale before they are submitted:
+
+| Measurement | Summary |
+| --- | --- |
+| Weight | Live and final body weight in kilograms. |
+| Heart Rate | Heart rate in beats per minute when included in the BLE packet stream. |
+| Impedance | Bioelectrical impedance in ohms when included in the BLE packet stream. |
 
 ## Application Flow
 
@@ -91,99 +165,136 @@ flowchart TD
     A[MainActivity] --> B[HealthMaxxingTheme]
     B --> C[HomeScreen]
     C --> D[AppScaffold]
-    D --> E{AccountPreferences selectedAccountId}
-    E -->|Loading| F[LoadingScreen]
-    E -->|Missing| G[Login / Onboarding Flow]
-    E -->|Present| H[MainAppScaffold]
+    D --> E{Stored account ID}
+    E -->|Loading| F[Loading screen]
+    E -->|Missing| G[Onboarding]
+    E -->|Present| H[Main app shell]
     H --> I[Metrics]
-    H --> J[Workouts Placeholder]
+    H --> J[Workouts placeholder]
     H --> K[Record]
-    H --> L[Vitals Placeholder]
+    H --> L[Vitals placeholder]
 ```
 
-`AppScaffold` is the app gatekeeper. It observes `AccountViewModel.accountState`, which is derived from `AccountPreferences.selectedAccountId`. If no account is stored, the onboarding UI is shown. If an account exists, the main navigation shell is shown.
+`AppScaffold` controls the logged-out and logged-in states. It observes `AccountViewModel.accountState`, which is derived from the account ID stored in DataStore.
 
 ## Architecture
 
-The app follows a pragmatic MVVM structure:
+Forma uses a straightforward MVVM architecture with a Compose UI layer, Hilt-provided view models and repositories, and separate data sources for the backend, DataStore, and Bluetooth scale.
 
 ```mermaid
-flowchart LR
-    UI[Compose Screens] --> VM[Hilt ViewModels]
-    VM --> Repo[Repositories]
-    VM --> Prefs[AccountPreferences]
-    VM --> Scale[ScaleManager]
-    Repo --> Api[Retrofit ApiService]
-    Api --> Backend[Health Backend]
-    Prefs --> DataStore[Jetpack DataStore]
-    Scale --> Bluetooth[Android BLE GATT]
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Arial, sans-serif", "primaryColor": "#E8F3FF", "primaryTextColor": "#102033", "primaryBorderColor": "#2563EB", "lineColor": "#334155", "secondaryColor": "#F8FAFC", "tertiaryColor": "#ECFDF5"}}}%%
+flowchart TB
+    subgraph UI["UI Layer - Jetpack Compose"]
+        Main["MainActivity"]
+        Scaffold["AppScaffold"]
+        Login["Onboarding Screens"]
+        Metrics["Metrics Dashboard"]
+        Record["Record Screen"]
+    end
+
+    subgraph VM["ViewModel Layer - Hilt"]
+        AccountVM["AccountViewModel"]
+        LoginVM["LoginViewModel"]
+        MetricsVM["Insights / Essentials / Performance / Fat / Muscle ViewModels"]
+        RecordVM["RecordViewModel"]
+    end
+
+    subgraph Domain["Repository Layer"]
+        Repos["Insights, Essentials, Performance, Fat, Muscle Repositories"]
+    end
+
+    subgraph Data["Data Layer"]
+        Api["Retrofit ApiService"]
+        Prefs["AccountPreferences"]
+        Scale["ScaleManager"]
+        Decoder["ScalePacketDecoder"]
+    end
+
+    subgraph External["External Systems"]
+        Backend["Backend API"]
+        Store["Jetpack DataStore"]
+        BLE["Android BLE GATT Smart Scale"]
+    end
+
+    Main --> Scaffold
+    Scaffold --> Login
+    Scaffold --> Metrics
+    Scaffold --> Record
+
+    Scaffold --> AccountVM
+    Login --> LoginVM
+    Metrics --> MetricsVM
+    Record --> RecordVM
+
+    AccountVM --> Prefs
+    LoginVM --> Api
+    LoginVM --> Prefs
+    MetricsVM --> Repos
+    MetricsVM --> Prefs
+    RecordVM --> Scale
+    RecordVM --> Api
+    RecordVM --> Prefs
+
+    Repos --> Api
+    Api --> Backend
+    Prefs --> Store
+    Scale --> Decoder
+    Scale --> BLE
 ```
 
 ### UI Layer
 
-The UI layer lives under:
+Primary UI files are under:
 
 ```text
 app/src/main/java/com/aneesh/healthmaxxing/ui
 ```
 
-Important entry points:
+Key files:
 
-- `MainActivity.kt`: Enables edge-to-edge rendering and mounts the Compose app.
-- `HomeScreen.kt`: Thin wrapper around `AppScaffold`.
-- `AppScaffold.kt`: Handles loading, logged-out, and logged-in app states.
-- `Metrics.kt`: Metrics screen coordinator and pull-to-refresh host.
-- `RecordScreen.kt`: BLE measurement UI.
-- `login/`: Multi-step onboarding screens and registration view model.
+- `MainActivity.kt`: Starts the Compose app.
+- `HomeScreen.kt`: Delegates to `AppScaffold`.
+- `AppScaffold.kt`: Handles loading, onboarding, and main navigation states.
+- `metrics/`: Metric tabs, dashboard cards, charts, and metric view models.
+- `record/`: Smart-scale recording UI and view model.
+- `login/`: Onboarding screens and registration view model.
+- `theme/`: Compose theme, colors, and typography.
 
 ### ViewModel Layer
 
-ViewModels expose screen state through Compose state or `StateFlow`:
-
-- `AccountViewModel`: Converts persisted account ID into `Loading`, `LoggedOut`, or `LoggedIn`.
-- `LoginViewModel`: Handles account registration, profile creation, metadata submission, and local persistence.
-- `InsightsViewModel`: Loads insights and follow-up trend series for momentum factors.
+- `AccountViewModel`: Converts stored account data into app session state.
+- `LoginViewModel`: Registers account/profile data and persists identifiers.
+- `InsightsViewModel`: Loads narrative insights and momentum trend data.
 - `EssentialsViewModel`: Loads profile essentials.
 - `PerformanceViewModel`: Loads performance analytics.
-- `FatViewModel`: Loads fat metrics.
-- `MuscleViewModel`: Loads muscle metrics.
-- `RecordViewModel`: Coordinates BLE streaming and measurement upload.
-
-### Repository Layer
-
-Repository classes are intentionally thin wrappers around `ApiService`:
-
-- `InsightsRepository`
-- `EssentialsRepository`
-- `PerformanceRepository`
-- `FatRepository`
-- `MuscleRepository`
-
-This keeps network calls injectable and testable while leaving response mapping close to the feature view models.
+- `FatViewModel`: Loads and maps fat metrics.
+- `MuscleViewModel`: Loads and maps muscle metrics.
+- `RecordViewModel`: Coordinates BLE reading and measurement upload.
 
 ### Data Layer
 
-The data layer includes:
+- `ApiService.kt`: Retrofit endpoint definitions.
+- `DTO.kt`: Typed request and response models for most backend endpoints.
+- `NetworkModule.kt`: Hilt-provided Retrofit and API service instances.
+- `AccountPreferences.kt`: DataStore-backed account/profile storage.
+- `ScaleManager.kt`: BLE connection and notification flow.
+- `ScalePacketDecoder.kt`: Smart-scale packet parser.
 
-- Retrofit API interface and DTOs in `data/remote`.
-- DataStore-backed account preferences in `data/datastore`.
-- BLE smart-scale connection and packet decoding in `data/bluetooth`.
-
-## Tech Stack
+## Technology Stack
 
 | Area | Technology |
 | --- | --- |
 | Language | Kotlin 2.2.10 |
-| Build System | Gradle Kotlin DSL |
+| Build | Gradle Kotlin DSL |
 | Android Gradle Plugin | 9.2.1 |
 | UI | Jetpack Compose, Material 3 |
 | Navigation | AndroidX Navigation Compose |
 | Dependency Injection | Dagger Hilt |
-| Async | Kotlin Coroutines, Flow, StateFlow |
-| Networking | Retrofit 2.11, Gson converter, OkHttp |
+| Async | Kotlin coroutines, Flow, StateFlow |
+| Networking | Retrofit, Gson converter, OkHttp |
 | Local Storage | Jetpack DataStore Preferences |
 | Bluetooth | Android Bluetooth GATT APIs |
-| Testing | JUnit, AndroidX Test, Espresso, Compose UI Test |
+| Tests | JUnit, AndroidX Test, Espresso, Compose UI Test |
 
 Android configuration:
 
@@ -194,7 +305,7 @@ Android configuration:
 | Min SDK | 30 |
 | Target SDK | 36 |
 | Compile SDK | 36 |
-| Java/Kotlin JVM Target | 11 |
+| JVM target | 11 |
 | Version | `1.0` / `versionCode = 1` |
 
 ## Project Structure
@@ -241,39 +352,45 @@ Android configuration:
 
 ## Backend Integration
 
-The Retrofit service is defined in:
+Retrofit endpoints are defined in:
 
 ```text
 app/src/main/java/com/aneesh/healthmaxxing/data/remote/ApiService.kt
 ```
 
-The current base URL is configured in `NetworkModule`:
+The current development base URL is configured in:
+
+```text
+app/src/main/java/com/aneesh/healthmaxxing/data/remote/NetworkModule.kt
+```
+
+Current value:
 
 ```kotlin
 Retrofit.Builder()
     .baseUrl("http://192.168.0.99:3030/")
 ```
 
-Because this is a LAN development address, the app must run on a device or emulator that can reach that host. Cleartext HTTP traffic is currently allowed through `network_security_config.xml`.
+The app currently allows cleartext HTTP through `network_security_config.xml`, which is appropriate for local development but should be revisited before release.
 
-### API Endpoints Used
+### API Endpoints
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `client/register` | Create/register an account by email. |
+| `POST` | `client/register` | Register an account by email. |
 | `POST` | `client/register/profiles` | Create a profile for an account. |
 | `POST` | `client/register/metadata` | Save profile metadata. |
-| `POST` | `ingest/add_measurement` | Upload a completed scale measurement. |
+| `POST` | `ingest/add_measurement` | Upload a completed smart-scale measurement. |
 | `GET` | `client/profiles/{profileId}/insights` | Load insight cards and effort score. |
-| `GET` | `client/body-composition/trends` | Load trend points for dashboard momentum factors. |
+| `GET` | `client/body-composition/trends` | Load trend points for selected metrics. |
 | `GET` | `client/profiles/{profileId}/essentials` | Load essentials dashboard data. |
 | `GET` | `client/profiles/{profileId}/performance` | Load performance analytics. |
-| `GET` | `client/profiles/{profileId}/fat` | Load fat-specific metrics. |
-| `GET` | `client/profiles/{profileId}/muscle` | Load muscle-specific metrics. |
+| `GET` | `client/profiles/{profileId}/fat` | Load fat metrics. |
+| `GET` | `client/profiles/{profileId}/muscle` | Load muscle metrics. |
 
 ## Bluetooth Scale Integration
 
-BLE scale support is implemented in:
+BLE support is implemented in:
 
 ```text
 app/src/main/java/com/aneesh/healthmaxxing/data/bluetooth
@@ -281,9 +398,9 @@ app/src/main/java/com/aneesh/healthmaxxing/data/bluetooth
 
 Key files:
 
-- `ScaleManager.kt`: Connects to the configured BLE device, discovers services, enables notifications, emits decoded measurements as a `Flow<ScaleMeasurement>`, and closes the GATT connection when complete.
+- `ScaleManager.kt`: Connects to the configured BLE device, discovers services, enables notifications, emits measurements through `Flow<ScaleMeasurement>`, and closes the GATT connection after completion.
 - `ScalePacketDecoder.kt`: Validates and decodes scale packets.
-- `ScaleMeasurement.kt`: Holds weight, heart rate, impedance, and final-measurement state.
+- `ScaleMeasurement.kt`: Stores weight, heart rate, impedance, and final-measurement state.
 
 Current BLE constants:
 
@@ -296,20 +413,20 @@ Current BLE constants:
 
 ### Packet Decoding
 
-`ScalePacketDecoder` supports:
+`ScalePacketDecoder` currently handles:
 
-- Final packet detection for the `F3 00` terminal packet.
+- Final packet detection for `F3 00`.
 - 11-byte packet validation.
 - Packet type validation for `0xCF` and `0xCE`.
 - XOR checksum validation across the first 10 bytes.
 - Weight extraction from bytes 3 and 4, divided by 100 to produce kilograms.
 - Heart-rate extraction from packet flags or packet data type.
-- Impedance decoding with range validation between 200 and 1200 ohms.
-- Carry-forward behavior, where later packets can reuse the last known weight, heart rate, or impedance if a packet omits a value.
+- Impedance decoding with range validation from 200 to 1200 ohms.
+- Carry-forward behavior for fields that are missing in later packets.
 
 ## Local Persistence
 
-Local account state is stored through Jetpack DataStore Preferences:
+Local account state is stored through DataStore Preferences in:
 
 ```text
 app/src/main/java/com/aneesh/healthmaxxing/data/datastore/AccountPreferences.kt
@@ -320,11 +437,11 @@ Stored keys:
 - `selected_account_id`
 - `selected_primary_profile_id`
 
-These values control whether the app shows onboarding or the authenticated dashboard and which profile ID is used for metrics and measurement uploads.
+These values determine whether the app opens onboarding or the main dashboard, and which profile ID is used for metric requests and measurement upload.
 
 ## Permissions
 
-The app declares:
+Declared permissions:
 
 - `INTERNET`
 - `ACCESS_NETWORK_STATE`
@@ -336,54 +453,44 @@ The app declares:
 
 Runtime permission behavior:
 
-- Android 12 and above: requests `BLUETOOTH_CONNECT` and `BLUETOOTH_SCAN`.
-- Android 11 and below: requests `ACCESS_FINE_LOCATION`.
+- Android 12 and above: `BLUETOOTH_CONNECT` and `BLUETOOTH_SCAN`.
+- Android 11 and below: `ACCESS_FINE_LOCATION`.
 
 ## Setup
 
 ### Prerequisites
 
-- Android Studio with support for Android Gradle Plugin 9.2.1.
+- Android Studio with Android Gradle Plugin 9.2.1 support.
 - JDK 11 or newer.
-- Android SDK platform 36 installed.
-- A physical Android device is recommended for BLE testing.
-- Backend server reachable at the configured base URL.
-- Compatible BLE smart scale if testing the Record screen.
+- Android SDK platform 36.
+- Backend server reachable from the emulator or device.
+- Physical Android device for BLE scale testing.
+- Compatible BLE smart scale for Record screen validation.
 
-### Clone And Open
+### Clone
 
 ```bash
 git clone <repository-url>
-cd HealthMaxxing
+cd Forma
 ```
 
-Open the project in Android Studio and let Gradle sync.
+Open the project in Android Studio and sync Gradle.
 
 ### Configure Backend
 
-Update the base URL in:
+Update the base URL in `NetworkModule.kt` if the backend is not available at the current LAN address. For a physical device, use a LAN IP reachable by the phone. For an emulator, use the appropriate host mapping for the development machine.
 
-```text
-app/src/main/java/com/aneesh/healthmaxxing/data/remote/NetworkModule.kt
-```
+### Run
 
-For a physical Android device, use a LAN IP reachable from the phone. For an emulator, use the appropriate emulator host mapping if the backend runs on the development machine.
+From Android Studio, select the `app` configuration and run it on a device or emulator.
 
-### Run The App
-
-From Android Studio:
-
-1. Select the `app` configuration.
-2. Choose a device or emulator.
-3. Run the project.
-
-From the command line:
+Command line:
 
 ```bash
 ./gradlew installDebug
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 .\gradlew.bat installDebug
@@ -391,77 +498,68 @@ On Windows PowerShell:
 
 ## Build And Test
 
-### Build Debug APK
+Build a debug APK:
 
 ```bash
 ./gradlew assembleDebug
 ```
 
-Windows:
-
-```powershell
-.\gradlew.bat assembleDebug
-```
-
-### Run Unit Tests
+Run unit tests:
 
 ```bash
 ./gradlew test
 ```
 
-Windows:
-
-```powershell
-.\gradlew.bat test
-```
-
-### Run Instrumented Tests
-
-Requires a connected device or running emulator:
+Run instrumented tests with a connected device or emulator:
 
 ```bash
 ./gradlew connectedAndroidTest
 ```
 
-Windows:
+Windows PowerShell equivalents:
 
 ```powershell
+.\gradlew.bat assembleDebug
+.\gradlew.bat test
 .\gradlew.bat connectedAndroidTest
 ```
 
 ## Configuration Notes
 
-- The app label in `strings.xml` is currently `Forma`, while the repository/project name is `HealthMaxxing`.
-- The backend URL is hardcoded in `NetworkModule`.
-- The BLE scale MAC address is hardcoded in `ScaleManager`.
-- Cleartext HTTP traffic is enabled for development.
-- Fat and muscle endpoints currently return `JsonObject` responses rather than strongly typed DTOs.
-- Workouts, Vitals, Lean Mass, Protein, and Hydration are visible as navigation/tab surfaces but are not fully implemented feature screens yet.
+- The project name is Forma.
+- Kotlin package paths and generated identifiers still use `healthmaxxing`.
+- The Compose theme class is still named `HealthMaxxingTheme`.
+- The application class is still named `HealthMaxxingApp`.
+- The backend URL is currently hardcoded in `NetworkModule`.
+- The BLE scale MAC address is currently hardcoded in `ScaleManager`.
+- Cleartext HTTP traffic is enabled for local development.
+- Fat and muscle endpoints currently return `JsonObject` and are mapped manually in their view models.
 
 ## Known Limitations
 
-- No dynamic BLE scanning or device selection is implemented yet.
-- The configured scale address must match the target device.
+- No dynamic BLE scanning or device selection.
+- The scale address must match the target device.
 - The app depends on the configured backend for onboarding, metrics, and measurement persistence.
-- There is no Room/offline cache layer for dashboard responses.
-- There is no logout/account-switching UI in the current main shell.
+- No Room or offline cache layer for dashboard responses.
+- No logout or account-switching screen.
+- Workouts and Vitals are placeholders.
+- Lean Mass, Protein, and Hydration tabs are placeholders.
 - Release builds currently have minification disabled.
-- The default generated unit and instrumented test files are present, but feature-level test coverage is still minimal.
+- Feature-level test coverage is still limited.
 
 ## Roadmap
 
-Near-term improvements that fit the current architecture:
-
-- Move backend URL and BLE scale configuration into build config, product flavors, or a settings screen.
-- Add BLE scan and pairing flow for compatible scales.
-- Introduce typed DTOs for fat and muscle responses.
-- Add Room caching for recent dashboard data and measurement upload retry.
-- Add logout/profile switching support.
+- Move backend URL and BLE scale configuration into build config, product flavors, or settings.
+- Add BLE scan and compatible scale selection.
+- Replace fat and muscle `JsonObject` parsing with typed DTOs.
+- Add Room caching for dashboard data and upload retry.
+- Add logout and profile switching.
 - Complete Workouts and Vitals screens.
-- Add Health Connect integration for steps, sleep, heart rate, and recovery data.
-- Add feature tests for packet decoding, onboarding validation, repository error handling, and record upload behavior.
-- Enable release hardening with minification, shrinking, and environment-specific network security.
+- Implement Lean Mass, Protein, and Hydration detail tabs.
+- Add Health Connect support for steps, sleep, heart rate, and recovery metrics.
+- Add focused tests for packet decoding, onboarding validation, repository errors, and record upload.
+- Harden release networking and enable shrink/minify configuration.
 
 ## License
 
-No license file is currently included in this repository. Add one before distributing or accepting external contributions.
+No license file is currently included in this repository. Add one before distribution or external contribution.
