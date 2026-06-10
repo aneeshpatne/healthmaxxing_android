@@ -20,6 +20,7 @@ The app currently supports account onboarding, primary profile setup, backend-dr
 - [Setup](#setup)
 - [Build And Test](#build-and-test)
 - [Configuration Notes](#configuration-notes)
+- [Disclaimers](#disclaimers)
 - [Known Limitations](#known-limitations)
 - [Roadmap](#roadmap)
 
@@ -534,6 +535,22 @@ Windows PowerShell equivalents:
 - The BLE scale MAC address is currently hardcoded in `ScaleManager`.
 - Cleartext HTTP traffic is enabled for local development.
 - Fat and muscle endpoints currently return `JsonObject` and are mapped manually in their view models.
+
+## Disclaimers
+
+Forma is provided for software, tracking, and personal information purposes only. It is not a medical device, diagnostic tool, treatment system, clinical decision support product, or replacement for advice from a qualified healthcare professional.
+
+Health and body-composition values shown by the app may be incomplete, delayed, inaccurate, device-dependent, backend-dependent, or affected by user input, smart-scale firmware, hydration, posture, skin contact, timing, network availability, and other measurement conditions. Metrics such as body fat percentage, visceral fat, muscle mass, skeletal muscle mass, impedance, body age, effort score, and generated insights should be treated as estimates, not clinical facts.
+
+Do not use Forma to diagnose, prevent, monitor, treat, or manage any disease, injury, medical condition, medication, diet, training program, or emergency situation. Consult a qualified medical professional before making health, nutrition, exercise, weight-loss, recovery, or lifestyle decisions based on information displayed by the app.
+
+Backend-generated comments, scores, summaries, and recommendations are informational outputs from the configured service. They may not reflect complete medical history, lab data, wearable data, or professional judgment. The app does not guarantee that any recommendation is safe, complete, suitable, or effective for a particular user.
+
+Bluetooth scale readings depend on third-party hardware and Android BLE behavior. Forma does not guarantee compatibility with all scales, packet formats, firmware versions, Android devices, or operating system versions. Failed readings, incorrect readings, connection loss, duplicate submissions, or missing measurements may occur.
+
+Users and distributors are responsible for complying with applicable laws, platform policies, privacy obligations, health-data regulations, and third-party API or device terms in their jurisdiction. Do not store, transmit, or process sensitive personal data through any deployment without appropriate consent, security controls, and legal review.
+
+To the maximum extent permitted by applicable law, Forma is provided without warranties or guarantees of any kind. The authors and copyright holders are not liable for damages, losses, health outcomes, data loss, inaccurate measurements, service interruptions, security incidents, or decisions made based on the software. The full GPL warranty disclaimer and limitation terms are available in [LICENSE](LICENSE).
 
 ## Known Limitations
 
