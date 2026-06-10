@@ -363,7 +363,7 @@ private fun MuscleMetricBottomSheet(
     onDismissRequest: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = false,
+        skipPartiallyExpanded = true,
         confirmValueChange = { true }
     )
 
