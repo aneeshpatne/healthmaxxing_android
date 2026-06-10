@@ -692,6 +692,7 @@ fun Fat(
             comment = fat.comments.fatPercent?.comment
                 ?: "Your fat ratio is within the healthy range for your age and gender."
         )
+        VisceralSubcutaneousDeltaCard(fat = fat)
         Stats(fat = fat)
     }
 }
@@ -1080,6 +1081,134 @@ fun BottomSheetScreen(
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun VisceralSubcutaneousDeltaCard(
+    fat: FatUiState,
+    modifier: Modifier = Modifier
+) {
+    val comment = fat.comments.visceralSubcutaneous30dDelta
+    if (comment?.remark == null && comment?.comment == null) return
+
+    val visDeltaVal = fat.visceralFatDeltaKg
+    val subDeltaVal = fat.subcutaneousFatDeltaKg
+
+    val visDelta = visDeltaVal?.let { if (it > 0) "+${"%.2f".format(it)}" else "%.2f".format(it) } ?: "--"
+    val subDelta = subDeltaVal?.let { if (it > 0) "+${"%.2f".format(it)} kg" else "${"%.2f".format(it)} kg" } ?: "--"
+
+    CustomizedCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(Color(0xFFE0E7FF), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = Blue,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Text(
+                    text = "VISCERAL VS SUBCUTANEOUS",
+                    color = Blue,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.2.sp,
+                    style = compactTextStyle()
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "Visceral Fat",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        style = compactTextStyle()
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = visDelta,
+                        color = if (visDelta.startsWith("-")) Success else if (visDelta == "--") TextPrimary else Red,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = compactTextStyle()
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .border(1.dp, CardBorder, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "Subcutaneous",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        style = compactTextStyle()
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subDelta,
+                        color = if (subDelta.startsWith("-")) Success else if (subDelta == "--") TextPrimary else Orange,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = compactTextStyle()
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                comment.remark?.let { remark ->
+                    Text(
+                        text = remark,
+                        color = TextPrimary,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = compactTextStyle()
+                    )
+                }
+
+                comment.comment?.let { detail ->
+                    Text(
+                        text = detail,
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        style = compactTextStyle()
+                    )
+                }
             }
         }
     }
