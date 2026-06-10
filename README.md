@@ -562,4 +562,6 @@ Windows PowerShell equivalents:
 
 ## License
 
-No license file is currently included in this repository. Add one before distribution or external contribution.
+Forma is licensed under the GNU General Public License v3.0 or later. You may use, study, copy, modify, and distribute the software under the GPL terms, provided that derivative distributions preserve the same license obligations and include the required copyright and license notices.
+
+See [LICENSE](LICENSE) for the full license text.
