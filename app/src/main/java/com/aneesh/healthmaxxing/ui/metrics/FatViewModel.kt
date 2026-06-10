@@ -28,6 +28,8 @@ data class FatUiState(
     val visceralFat: Double? = null,
     val subcutaneousFatPct: Double? = null,
     val subcutaneousFatMassKg: Double? = null,
+    val visceralFatDeltaKg: Double? = null,
+    val subcutaneousFatDeltaKg: Double? = null,
     val comments: FatComments = FatComments(),
     val trends: Map<String, List<TrendPoint>> = emptyMap()
 )
@@ -154,6 +156,8 @@ private fun JsonObject.toFatUiState(): FatUiState {
         )
     ).filterValues { it.isNotEmpty() }
 
+    val visceralSubDeltaObj = metrics.getObject("visceralSubcutaneous30dDelta")
+
     return FatUiState(
         bodyFatPct = metrics.doubleValue("fatPercent", "bodyFatPct", "body_fat_pct", "fatRatio", "fat_ratio")
             ?: trends.latestValue(FAT_METRIC_BODY_FAT_PCT),
@@ -169,6 +173,8 @@ private fun JsonObject.toFatUiState(): FatUiState {
             ?: trends.latestValue(FAT_METRIC_SUBCUTANEOUS_FAT_PCT),
         subcutaneousFatMassKg = metrics.doubleValue("subcutaneousFatMassKg", "subcutaneous_fat_mass_kg")
             ?: trends.latestValue(FAT_METRIC_SUBCUTANEOUS_FAT_MASS_KG),
+        visceralFatDeltaKg = visceralSubDeltaObj?.doubleValue("visceralFatDeltaKg"),
+        subcutaneousFatDeltaKg = visceralSubDeltaObj?.doubleValue("subcutaneousFatDeltaKg"),
         comments = commentsPayload.toFatComments(),
         trends = trends
     )
