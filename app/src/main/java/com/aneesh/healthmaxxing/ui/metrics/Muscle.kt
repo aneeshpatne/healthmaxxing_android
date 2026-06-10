@@ -629,22 +629,63 @@ private fun MuscleLineChart(
                 androidx.compose.ui.geometry.Offset(xFor(index), yFor(point.value))
             }
 
-            offsets.zipWithNext().forEach { (start, end) ->
-                drawLine(
-                    color = MuscleSnapshotColors.MuscleBlue,
-                    start = start,
-                    end = end,
-                    strokeWidth = 3.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
+            val path = androidx.compose.ui.graphics.Path()
+            val fillPath = androidx.compose.ui.graphics.Path()
+            
+            if (offsets.isNotEmpty()) {
+                path.moveTo(offsets.first().x, offsets.first().y)
+                for (i in 0 until offsets.lastIndex) {
+                    val p0 = offsets.getOrElse(i - 1) { offsets[i] }
+                    val p1 = offsets[i]
+                    val p2 = offsets[i + 1]
+                    val p3 = offsets.getOrElse(i + 2) { p2 }
+
+                    val minY = topPad
+                    val maxY = topPad + chartHeight
+
+                    val control1 = androidx.compose.ui.geometry.Offset(
+                        x = p1.x + (p2.x - p0.x) / 6f,
+                        y = (p1.y + (p2.y - p0.y) / 6f).coerceIn(minY, maxY)
+                    )
+                    val control2 = androidx.compose.ui.geometry.Offset(
+                        x = p2.x - (p3.x - p1.x) / 6f,
+                        y = (p2.y - (p3.y - p1.y) / 6f).coerceIn(minY, maxY)
+                    )
+                    path.cubicTo(control1.x, control1.y, control2.x, control2.y, p2.x, p2.y)
+                }
             }
 
-            offsets.forEach { offset ->
-                drawCircle(color = Color.White, radius = 5.dp.toPx(), center = offset)
+            if (offsets.isNotEmpty()) {
+                fillPath.addPath(path)
+                fillPath.lineTo(offsets.last().x, topPad + chartHeight)
+                fillPath.lineTo(offsets.first().x, topPad + chartHeight)
+                fillPath.close()
+            }
+
+            drawPath(
+                path = fillPath,
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(
+                        MuscleSnapshotColors.MuscleBlue.copy(alpha = 0.4f),
+                        MuscleSnapshotColors.MuscleBlue.copy(alpha = 0.0f)
+                    ),
+                    startY = topPad,
+                    endY = topPad + chartHeight
+                )
+            )
+
+            drawPath(
+                path = path,
+                color = MuscleSnapshotColors.MuscleBlue,
+                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+            )
+
+            offsets.lastOrNull()?.let { lastOffset ->
+                drawCircle(color = Color.White, radius = 5.dp.toPx(), center = lastOffset)
                 drawCircle(
                     color = MuscleSnapshotColors.MuscleBlue,
                     radius = 5.dp.toPx(),
-                    center = offset,
+                    center = lastOffset,
                     style = Stroke(width = 2.dp.toPx())
                 )
             }
